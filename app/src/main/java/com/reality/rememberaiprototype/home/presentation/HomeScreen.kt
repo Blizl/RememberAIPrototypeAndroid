@@ -31,8 +31,6 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
         else -> {}
     }
 
-    Scaffold(
-        topBar = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     "History", modifier = Modifier.fillMaxWidth(),
@@ -47,23 +45,14 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                     onActiveChange = { viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-//                    LazyColumn {
-//                        items(state.images.size) {
-//                            Text(state.images[it])
-//                        }
-//                    }
+                ){
+                    LazyColumn {
+                        items(state.images.size) {
+                            Text(state.images[it])
+                        }
+                    }
                 }
-            }
-
-        }, content = {
-            LazyColumn {
-            items(state.images.size) {
-                Text(state.images[it])
-            }
-        }}
-    )
+        }
 }
 
 @Composable
