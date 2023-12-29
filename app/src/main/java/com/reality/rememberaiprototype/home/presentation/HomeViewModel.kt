@@ -1,15 +1,17 @@
-package com.reality.rememberaiprototype.home
+package com.reality.rememberaiprototype.home.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reality.rememberaiprototype.home.domain.ImageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(repository: ImageRepository) : ViewModel() {
+class HomeViewModel @Inject constructor(val repository: ImageRepository) : ViewModel() {
 
     private val _state: MutableStateFlow<HomeState> =
         MutableStateFlow(HomeState())
@@ -20,7 +22,16 @@ class HomeViewModel @Inject constructor(repository: ImageRepository) : ViewModel
     )
     val uiAction = _uiAction.asStateFlow()
 
+    init {
+        fetchSavedImages()
+    }
 
+    private fun fetchSavedImages() {
+        viewModelScope.launch{
+            val images = repository.fetchSavedImages()
+            setState(state.value.copy(images = images))
+        }
+    }
 
     fun dispatchEvent(event: HomeUIEvent) {
         when (event) {

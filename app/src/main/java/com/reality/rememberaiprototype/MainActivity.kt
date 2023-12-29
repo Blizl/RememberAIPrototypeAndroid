@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.reality.rememberaiprototype.home.HomeScreen
+import com.reality.rememberaiprototype.home.presentation.HomeScreen
 import com.reality.rememberaiprototype.ui.theme.RememberAIPrototypeTheme
 import dagger.hilt.android.AndroidEntryPoint
 

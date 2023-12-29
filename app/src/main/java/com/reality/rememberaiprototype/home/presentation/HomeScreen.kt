@@ -1,4 +1,4 @@
-package com.reality.rememberaiprototype.home
+package com.reality.rememberaiprototype.home.presentation
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Column
@@ -49,16 +49,20 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    LazyColumn {
-//                    items(screenshots) { screenshot ->
-//                        Image(
-//                        )
+//                    LazyColumn {
+//                        items(state.images.size) {
+//                            Text(state.images[it])
+//                        }
 //                    }
-                    }
                 }
             }
 
-        }, content = {}
+        }, content = {
+            LazyColumn {
+            items(state.images.size) {
+                Text(state.images[it])
+            }
+        }}
     )
 }
 

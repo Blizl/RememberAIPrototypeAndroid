@@ -1,4 +1,4 @@
-package com.reality.rememberaiprototype.home
+package com.reality.rememberaiprototype.home.presentation
 
 data class HomeState(
     val images: List<String> = listOf(),
