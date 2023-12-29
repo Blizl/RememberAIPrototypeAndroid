@@ -3,6 +3,7 @@ package com.reality.rememberaiprototype
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -44,20 +45,32 @@ class MainActivity : ComponentActivity() {
         checkPermissions()
     }
 
+
     private fun checkPermissions() {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // Permission is not granted, request it
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Android 10+ will use MediaStore to access external files
+            return
+        }
+        var isAllPermissionsGranted = true
+        for (permission in permissions) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    permission
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                isAllPermissionsGranted = false
+                break
+            }
+        }
+
+        if (!isAllPermissionsGranted) {
             ActivityCompat.requestPermissions(
                 this,
-                arrayOf(READ_EXTERNAL_STORAGE),
+                permissions,
                 STORAGE_PERMISSION_CODE
             )
         } else {
-            // Permission is already granted, proceed with your logic
+            // Permissions are already granted, proceed with your logic
             // Access external storage here
         }
     }
