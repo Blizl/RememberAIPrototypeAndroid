@@ -6,6 +6,6 @@ class DefaultImageRepository : ImageRepository {
 
     override suspend fun fetchSavedImages(): List<String> {
         // return a list of images saved locally
-        return listOf("hi", "test")
+        return listOf("/sdcard/Pictures/ScreenShots/Screenshot_20231229-131738.png")
     }
 }
