@@ -11,7 +11,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -55,14 +53,17 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
             onSearch = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
             active = state.searching,
             onActiveChange = { viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
+            placeholder = {Text("Search here")},
             modifier = Modifier
                 .fillMaxWidth()
         ) {
             LazyColumn {
                 items(state.images.size) {
-                    ImageFromFile(filePath = state.images[it].toUri(),
-                        LocalContext.current.contentResolver)
-                    Spacer(modifier = Modifier.padding(vertical = 24.dp) )
+                    ImageFromFile(
+                        filePath = state.images[it].toUri(),
+                        LocalContext.current.contentResolver
+                    )
+                    Spacer(modifier = Modifier.padding(vertical = 24.dp))
                 }
             }
         }
@@ -77,6 +78,7 @@ fun ImageFromFile(filePath: Uri, contentResolver: ContentResolver) {
         modifier = Modifier.fillMaxWidth()
     )
 }
+
 fun cropBitmapToHalfHeight(originalBitmap: Bitmap): Bitmap {
     val width = originalBitmap.width
     val height = originalBitmap.height
