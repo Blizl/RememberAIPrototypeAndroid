@@ -1,6 +1,7 @@
 package com.reality.rememberaiprototype
 
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
+import android.Manifest.permission.READ_MEDIA_IMAGES
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.content.pm.PackageManager
 import android.os.Build
@@ -47,9 +48,14 @@ class MainActivity : ComponentActivity() {
 
 
     private fun checkPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Android 10+ will use MediaStore to access external files
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(READ_MEDIA_IMAGES),
+                STORAGE_PERMISSION_CODE
+            )
             return
+
         }
         var isAllPermissionsGranted = true
         for (permission in permissions) {
