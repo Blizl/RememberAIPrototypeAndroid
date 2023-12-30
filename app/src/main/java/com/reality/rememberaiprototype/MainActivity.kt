@@ -6,6 +6,8 @@ import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +16,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
+import com.reality.rememberaiprototype.home.data.ScreenshotWorker
 import com.reality.rememberaiprototype.home.presentation.HomeScreen
 import com.reality.rememberaiprototype.ui.theme.RememberAIPrototypeTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -21,10 +26,13 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val STORAGE_PERMISSION_CODE = 101
-    private val permissions = arrayOf(
+    private val legacyPermissions = arrayOf(
         READ_EXTERNAL_STORAGE,
-        WRITE_EXTERNAL_STORAGE
+        WRITE_EXTERNAL_STORAGE,
+        MEDIA_PROJECTION_SERVICE
     )
+    private val permissions =
+        arrayOf(READ_MEDIA_IMAGES, MEDIA_PROJECTION_SERVICE)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,19 +54,36 @@ class MainActivity : ComponentActivity() {
         checkPermissions()
     }
 
+    private fun scheduleWork() {
+        val workManager = WorkManager.getInstance(applicationContext)
+
+        val periodicWorkRequest = OneTimeWorkRequest.Builder(ScreenshotWorker::class.java)
+            .build()
+
+        workManager.enqueue(periodicWorkRequest)
+
+        val handler = Handler(Looper.getMainLooper())
+        val runnable = object : Runnable {
+            override fun run() {
+                // Enqueue the work after a delay
+                workManager.enqueue(periodicWorkRequest)
+                // Schedule the next work after 10 seconds
+                handler.postDelayed(this, 10 * 1000)
+            }
+        }
+
+        // 10 seconds
+        handler.postDelayed(runnable, 10 * 1000)
+
+    }
+
 
     private fun checkPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(READ_MEDIA_IMAGES),
-                STORAGE_PERMISSION_CODE
-            )
-            return
+        val permissionsToCheck =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) permissions else legacyPermissions
 
-        }
         var isAllPermissionsGranted = true
-        for (permission in permissions) {
+        for (permission in permissionsToCheck) {
             if (ContextCompat.checkSelfPermission(
                     this,
                     permission
@@ -78,6 +103,7 @@ class MainActivity : ComponentActivity() {
         } else {
             // Permissions are already granted, proceed with your logic
             // Access external storage here
+            scheduleWork()
         }
     }
 
