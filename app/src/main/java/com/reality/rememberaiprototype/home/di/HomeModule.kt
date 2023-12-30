@@ -1,7 +1,6 @@
 package com.reality.rememberaiprototype.home.di
 
 import android.app.Application
-import android.content.Context
 import com.reality.rememberaiprototype.home.data.DefaultImageRepository
 import com.reality.rememberaiprototype.home.domain.ImageRepository
 import dagger.Module

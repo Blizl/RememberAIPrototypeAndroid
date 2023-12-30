@@ -2,15 +2,16 @@ package com.reality.rememberaiprototype.home.presentation
 
 import android.annotation.SuppressLint
 import android.content.ContentResolver
+import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -71,14 +72,31 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
 @Composable
 fun ImageFromFile(filePath: Uri, contentResolver: ContentResolver) {
     Image(
-        bitmap = loadBitmap(filePath, contentResolver),
+        bitmap = cropBitmapToHalfHeight(loadBitmap(filePath, contentResolver)).asImageBitmap(),
         contentDescription = null, // Provide content description if needed
         modifier = Modifier.fillMaxWidth()
     )
 }
+fun cropBitmapToHalfHeight(originalBitmap: Bitmap): Bitmap {
+    val width = originalBitmap.width
+    val height = originalBitmap.height
+
+    // Define the new dimensions for the cropped bitmap
+    val newHeight = height / 2 // Half of the original height
+
+    // Crop the original bitmap to the new dimensions
+    val croppedBitmap = Bitmap.createBitmap(originalBitmap, 0, 0, width, newHeight)
+
+    // Ensure the original bitmap and the cropped bitmap are not the same instance
+    if (croppedBitmap !== originalBitmap) {
+        originalBitmap.recycle() // Release the original bitmap resources if not used anymore
+    }
+
+    return croppedBitmap
+}
 
 
-private fun loadBitmap(uri: Uri, contentResolver: ContentResolver): ImageBitmap {
+private fun loadBitmap(uri: Uri, contentResolver: ContentResolver): Bitmap {
     return if (Build.VERSION.SDK_INT < 28) {
         MediaStore.Images
             .Media.getBitmap(contentResolver, uri)
@@ -87,7 +105,7 @@ private fun loadBitmap(uri: Uri, contentResolver: ContentResolver): ImageBitmap 
         val source = ImageDecoder
             .createSource(contentResolver, uri)
         ImageDecoder.decodeBitmap(source)
-    }.asImageBitmap()
+    }
 }
 
 

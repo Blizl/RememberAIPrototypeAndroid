@@ -3,7 +3,6 @@ package com.reality.rememberaiprototype.home.data
 import android.content.ContentResolver
 import android.net.Uri
 import android.provider.MediaStore
-import android.util.Log
 import com.reality.rememberaiprototype.home.domain.ImageRepository
 
 class DefaultImageRepository(val contentResolver: ContentResolver): ImageRepository {
@@ -33,7 +32,6 @@ class DefaultImageRepository(val contentResolver: ContentResolver): ImageReposit
                 val imageUri = contentUri.buildUpon().appendPath(id.toString()).build()
                 screenshots.add(imageUri)
             }
-            Log.e("Test", "there are ${screenshots.size} screenshots")
             return screenshots
         }
 
