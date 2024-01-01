@@ -44,7 +44,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Button(onClick = {viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick)}, modifier = Modifier.fillMaxWidth()) {
-            if (state.showRecordingButton) Text("Stop Recording") else Text("Start Recording")
+            if (state.recording) Text("Stop Recording") else Text("Start Recording")
         }
         Text(
             "History", modifier = Modifier.fillMaxWidth(),

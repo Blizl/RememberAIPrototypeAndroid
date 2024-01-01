@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reality.rememberaiprototype.home.domain.ImageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,27 +29,18 @@ class HomeViewModel @Inject constructor(val repository: ImageRepository) : ViewM
     private var images: Flow<List<String>> = flowOf()
 
     init {
-        viewModelScope.launch {
-            async { fetchSavedImages() }
-            async { fetchScreenshotServiceState() }
-        }
-
+        fetchData()
     }
 
-    private suspend fun fetchScreenshotServiceState() {
-        setState(
-            state.value.copy(
-                showRecordingButton = repository.isScreenshotServiceRunning()
-            )
-        )
-
-    }
-
-    private suspend fun fetchSavedImages() {
-        images = flowOf(repository.fetchSavedImages())
-        images.collect {
-            setState(state.value.copy(images = it))
+    private fun fetchData() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val recording = repository.isScreenshotServiceRunning()
+            images = flowOf(repository.fetchSavedImages())
+            images.collect {
+                setState(state.value.copy(images = it, recording = recording))
+            }
         }
+
     }
 
     fun dispatchEvent(event: HomeUIEvent) {
@@ -64,7 +55,7 @@ class HomeViewModel @Inject constructor(val repository: ImageRepository) : ViewM
         viewModelScope.launch {
             val result = repository.toggleScreenshotRecord()
             if (result.isSuccess) {
-                setState(state.value.copy(showRecordingButton = result.getOrNull() == true))
+                setState(state.value.copy(recording = result.getOrNull() == true))
             }
         }
     }
