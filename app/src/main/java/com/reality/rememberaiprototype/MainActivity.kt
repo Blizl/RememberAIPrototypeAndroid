@@ -1,11 +1,15 @@
 package com.reality.rememberaiprototype
 
+import android.Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.READ_MEDIA_IMAGES
+import android.Manifest.permission.READ_MEDIA_VIDEO
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -31,14 +35,16 @@ import timber.log.Timber
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val PERMISSION_CODE = 101
+    private val REQUEST_CODE_SCREEN_CAPTURE = 102
     private val legacyPermissions = arrayOf(
         READ_EXTERNAL_STORAGE,
         WRITE_EXTERNAL_STORAGE,
         MEDIA_PROJECTION_SERVICE,
-        POST_NOTIFICATIONS
+        POST_NOTIFICATIONS,
+        FOREGROUND_SERVICE_MEDIA_PROJECTION,
     )
     private val permissions =
-        arrayOf(READ_MEDIA_IMAGES, MEDIA_PROJECTION_SERVICE, POST_NOTIFICATIONS)
+        arrayOf(READ_MEDIA_IMAGES, MEDIA_PROJECTION_SERVICE, POST_NOTIFICATIONS, FOREGROUND_SERVICE_MEDIA_PROJECTION)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +65,10 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         checkPermissions()
+        val mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        val permissionIntent = mediaProjectionManager.createScreenCaptureIntent()
+
+        startActivityForResult(permissionIntent, REQUEST_CODE_SCREEN_CAPTURE)
     }
 
 //    private fun scheduleWork() {
@@ -105,7 +115,7 @@ class MainActivity : ComponentActivity() {
         if (!isAllPermissionsGranted) {
             ActivityCompat.requestPermissions(
                 this,
-                permissions,
+                permissionsToCheck,
                 PERMISSION_CODE
             )
         } else {
