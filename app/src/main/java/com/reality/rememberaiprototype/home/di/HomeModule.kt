@@ -16,6 +16,6 @@ object HomeModule {
     @Provides
     @Singleton
     fun providesImageRepository(application: Application): ImageRepository {
-        return DefaultImageRepository(contentResolver = application.contentResolver)
+        return DefaultImageRepository(contentResolver = application.contentResolver, application)
     }
 }

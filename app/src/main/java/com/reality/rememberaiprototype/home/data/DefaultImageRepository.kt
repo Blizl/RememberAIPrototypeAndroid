@@ -1,15 +1,48 @@
 package com.reality.rememberaiprototype.home.data
 
+import android.app.ActivityManager
+import android.app.Application
 import android.content.ContentResolver
+import android.content.Context
+import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.net.Uri
 import android.provider.MediaStore
+import com.reality.rememberaiprototype.MainActivity
 import com.reality.rememberaiprototype.home.domain.ImageRepository
+import timber.log.Timber
 
-class DefaultImageRepository(val contentResolver: ContentResolver): ImageRepository {
+class DefaultImageRepository(
+    val contentResolver: ContentResolver,
+    val application: Application
+) : ImageRepository {
 
     override suspend fun fetchSavedImages(): List<String> {
         // return a list of images saved locally
-        return queryScreenshots("Screenshots", contentResolver).map{ it.toString()}
+        return queryScreenshots("Screenshots", contentResolver).map { it.toString() }
+    }
+
+    override suspend fun toggleScreenshotRecord(): Result<Boolean> {
+        Timber.e("Starting foreground service")
+        return try {
+            val serviceIntent = Intent(application.applicationContext, ScreenshotService::class.java)
+            if (isServiceRunning(application, ScreenshotService::class.java)) {
+                application.stopService(serviceIntent)
+                Result.success(false)
+            } else {
+                val mainActivityIntent = Intent(application, MainActivity::class.java)
+                mainActivityIntent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+                mainActivityIntent.putExtra("RECORD_SCREEN_PERMISSION", true)
+                application.startActivity(mainActivityIntent)
+                Result.success(true)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun isScreenshotServiceRunning(): Boolean {
+        return isServiceRunning(application, ScreenshotService::class.java)
     }
 
     private fun queryScreenshots(folderName: String, contentResolver: ContentResolver): List<Uri> {
@@ -36,5 +69,17 @@ class DefaultImageRepository(val contentResolver: ContentResolver): ImageReposit
         }
 
         return emptyList()
+    }
+
+    private fun isServiceRunning(context: Context, serviceClass: Class<*>): Boolean {
+        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningServices = manager.getRunningServices(Integer.MAX_VALUE)
+
+        for (serviceInfo in runningServices) {
+            if (serviceClass.name == serviceInfo.service.className) {
+                return true
+            }
+        }
+        return false
     }
 }

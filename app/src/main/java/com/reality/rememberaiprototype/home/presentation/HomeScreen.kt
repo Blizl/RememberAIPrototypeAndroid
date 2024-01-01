@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
@@ -42,6 +43,9 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        Button(onClick = {viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick)}, modifier = Modifier.fillMaxWidth()) {
+            if (state.showRecordingButton) Text("Stop Recording") else Text("Start Recording")
+        }
         Text(
             "History", modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center, fontSize = 20.sp,

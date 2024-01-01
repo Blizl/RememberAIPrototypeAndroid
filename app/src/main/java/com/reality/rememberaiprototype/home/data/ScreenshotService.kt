@@ -46,10 +46,6 @@ class ScreenshotService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent != null) {
-//            val notification = createNotification(this) // Create your foreground notification
-//            startForeground(10, notification)
-        }
         takeScreenshot()
         return START_STICKY
     }
@@ -70,7 +66,6 @@ class ScreenshotService : Service() {
             getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
 //        val notification = createNotification(this) // Create your foreground notification
 
-//        startForeground(NOTIFICATION_ID, notification)
 
 
         if (Build.VERSION.SDK_INT >= 26) {
