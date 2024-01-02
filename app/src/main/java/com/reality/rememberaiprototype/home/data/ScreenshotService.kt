@@ -7,7 +7,6 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
@@ -20,13 +19,13 @@ import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.util.Base64
 import android.util.DisplayMetrics
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.ByteBuffer
 
 
 class ScreenshotService : Service() {
@@ -78,12 +77,8 @@ class ScreenshotService : Service() {
         }, null)
         val handler = Handler(Looper.getMainLooper())
         imageReader.setOnImageAvailableListener({ reader ->
-            Timber.e("image is available")
-//            val image = reader.acquireLatestImage()
-//            storeExternally(image)
-//            image.close()
         }, handler)
-        val virtualDisplay = mediaProjection.createVirtualDisplay(
+        mediaProjection.createVirtualDisplay(
             "ScreenCapture",
             screenWidth,
             screenHeight,
@@ -175,7 +170,8 @@ class ScreenshotService : Service() {
 
     private fun storeExternally(image: Image) {
         Timber.e("Storing externally")
-        val externalFilesDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        val externalFilesDir =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
         val directory = File(externalFilesDir, "Screenshots")
 
         if (!directory.exists()) {
@@ -183,25 +179,19 @@ class ScreenshotService : Service() {
             directory.mkdirs() // Create the directory if it doesn't exist
         }
         val file = File(directory, "screenshot_${System.currentTimeMillis()}.jpg")
-        val buffer = image.planes[0].buffer.rewind()
-//        val bytes = ByteArray(buffer.remaining())
-//        Timber.e("Bytes is ${bytes.size}")
-//        buffer.get(bytes)
-//        val x = Base64.decode(bytes, Base64.DEFAULT)
-        // Convert bytes to a Bitmap
-//        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        val bitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888);
+        val planes = image.planes
+        val buffer: ByteBuffer = planes[0].buffer
+        val pixelStride: Int = planes[0].pixelStride
+        val rowStride: Int = planes[0].rowStride
+        val rowPadding: Int = rowStride - pixelStride * screenWidth
+        val bitmap = Bitmap.createBitmap(
+            screenWidth + rowPadding / pixelStride,
+            screenHeight,
+            Bitmap.Config.ARGB_8888
+        );
         bitmap.copyPixelsFromBuffer(buffer)
         val fileOutputStream = FileOutputStream(file)
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
-        Timber.e("bitmap is $bitmap")
-        bitmap?.let {
-//            // Save the Bitmap to a file
-//            fileOutputStream.write(bytes)
-//            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
-//            val fileSizeInBytes = file.length();
-//            Timber.e("After saving, file size in bytes is $fileSizeInBytes")
-        }
         fileOutputStream.close()
 
         Timber.e("File saved at: ${file.absolutePath}")
