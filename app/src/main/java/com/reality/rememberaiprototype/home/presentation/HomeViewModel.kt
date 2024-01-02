@@ -2,6 +2,7 @@ package com.reality.rememberaiprototype.home.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.reality.rememberaiprototype.home.domain.ImageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +49,16 @@ class HomeViewModel @Inject constructor(val repository: ImageRepository) : ViewM
             is HomeUIEvent.Search -> onSearchTextChange(event.query)
             is HomeUIEvent.ToggleSearch -> onToggleSearch()
             HomeUIEvent.PrimaryButtonClick -> onPrimaryButtonClick()
+            HomeUIEvent.Refresh -> onRefresh()
+        }
+    }
+
+    private fun onRefresh() {
+        viewModelScope.launch {
+            images = flowOf(repository.fetchSavedImages())
+            images.collect {
+                setState(state.value.copy(images = it))
+            }
         }
     }
 

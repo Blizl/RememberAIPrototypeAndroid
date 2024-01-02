@@ -8,11 +8,16 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SearchBar
@@ -20,6 +25,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -32,12 +41,15 @@ import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     val uiAction by viewModel.uiAction.collectAsState()
-
+    var refreshing by remember { mutableStateOf(false) }
+    val refreshState = rememberPullRefreshState(refreshing, {
+        viewModel.dispatchEvent(HomeUIEvent.Refresh)
+    })
     when (uiAction) {
         else -> {}
     }
@@ -61,15 +73,20 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
             modifier = Modifier
                 .fillMaxWidth()
         ) {
-            LazyColumn {
-                items(state.images.size) {
-                    ImageFromFile(
-                        filePath = state.images[it].toUri(),
-                        LocalContext.current.contentResolver
-                    )
-                    Spacer(modifier = Modifier.padding(vertical = 24.dp))
+            Box(Modifier.pullRefresh(refreshState)) {
+                LazyColumn {
+                    items(state.images.size) {
+                        ImageFromFile(
+                            filePath = state.images[it].toUri(),
+                            LocalContext.current.contentResolver
+                        )
+                        Spacer(modifier = Modifier.padding(vertical = 24.dp))
+                    }
                 }
+
+                PullRefreshIndicator(refreshing, refreshState, Modifier.align(Alignment.TopCenter))
             }
+
         }
     }
 }
