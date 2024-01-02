@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.reality.rememberaiprototype.home.data.ScreenshotService
+import com.reality.rememberaiprototype.home.data.ScreenshotService.Companion.RECORD_SCREEN_DATA
+import com.reality.rememberaiprototype.home.data.ScreenshotService.Companion.RECORD_SCREEN_RESULT_CODE
 import com.reality.rememberaiprototype.home.presentation.HomeScreen
 import com.reality.rememberaiprototype.ui.theme.RememberAIPrototypeTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -50,6 +52,8 @@ class MainActivity : ComponentActivity() {
         if (requestCode == REQUEST_CODE_SCREEN_CAPTURE) {
             val serviceIntent =
                 Intent(application.applicationContext, ScreenshotService::class.java)
+            serviceIntent.putExtra(RECORD_SCREEN_RESULT_CODE, resultCode)
+            serviceIntent.putExtra(RECORD_SCREEN_DATA, data)
             ContextCompat.startForegroundService(application.applicationContext, serviceIntent)
 
         }
