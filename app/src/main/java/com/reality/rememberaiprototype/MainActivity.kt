@@ -1,6 +1,7 @@
 package com.reality.rememberaiprototype
 
 import android.Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION
+import android.Manifest.permission.MANAGE_EXTERNAL_STORAGE
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.READ_MEDIA_IMAGES
@@ -38,13 +39,15 @@ class MainActivity : ComponentActivity() {
         MEDIA_PROJECTION_SERVICE,
         POST_NOTIFICATIONS,
         FOREGROUND_SERVICE_MEDIA_PROJECTION,
+        MANAGE_EXTERNAL_STORAGE
     )
     private val permissions =
         arrayOf(
             READ_MEDIA_IMAGES,
             MEDIA_PROJECTION_SERVICE,
             POST_NOTIFICATIONS,
-            FOREGROUND_SERVICE_MEDIA_PROJECTION
+            FOREGROUND_SERVICE_MEDIA_PROJECTION,
+            MANAGE_EXTERNAL_STORAGE
         )
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

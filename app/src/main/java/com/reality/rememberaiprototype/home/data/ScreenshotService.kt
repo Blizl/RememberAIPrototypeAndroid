@@ -6,20 +6,27 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
+import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
+import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Base64
 import android.util.DisplayMetrics
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import timber.log.Timber
+import java.io.File
+import java.io.FileOutputStream
 
 
 class ScreenshotService : Service() {
@@ -71,6 +78,10 @@ class ScreenshotService : Service() {
         }, null)
         val handler = Handler(Looper.getMainLooper())
         imageReader.setOnImageAvailableListener({ reader ->
+            Timber.e("image is available")
+//            val image = reader.acquireLatestImage()
+//            storeExternally(image)
+//            image.close()
         }, handler)
         val virtualDisplay = mediaProjection.createVirtualDisplay(
             "ScreenCapture",
@@ -82,12 +93,10 @@ class ScreenshotService : Service() {
             object : VirtualDisplay.Callback() {
                 override fun onResumed() {
                     Timber.e("VirtualDisplay Resumed - Start capturing frames here")
-                    // Start capturing frames or handle capture in this callback
                 }
 
                 override fun onStopped() {
                     Timber.e("VirtualDisplay Stopped")
-                    // Clean up resources when capturing stops
                 }
             },
             handler
@@ -144,13 +153,57 @@ class ScreenshotService : Service() {
         val runnable = object : Runnable {
             override fun run() {
                 Timber.e("Taking screenshot")
-//                val image = imageReader.acquireLatestImage()
-//                image.close()
+                val image = imageReader.acquireLatestImage()
+                // store in external directory
+                image?.let {
+                    try {
+                        storeExternally(it)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    } finally {
+                        it.close()
+                    }
+                }
+
 
                 // Schedule the next work after 10 seconds
                 handler.postDelayed(this, SCREENSHOT_INTERVAL)
             }
         }
         handler.postDelayed(runnable, SCREENSHOT_INTERVAL)
+    }
+
+    private fun storeExternally(image: Image) {
+        Timber.e("Storing externally")
+        val externalFilesDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        val directory = File(externalFilesDir, "Screenshots")
+
+        if (!directory.exists()) {
+            Timber.e("Directory doesn't exist")
+            directory.mkdirs() // Create the directory if it doesn't exist
+        }
+        val file = File(directory, "screenshot_${System.currentTimeMillis()}.jpg")
+        val buffer = image.planes[0].buffer.rewind()
+//        val bytes = ByteArray(buffer.remaining())
+//        Timber.e("Bytes is ${bytes.size}")
+//        buffer.get(bytes)
+//        val x = Base64.decode(bytes, Base64.DEFAULT)
+        // Convert bytes to a Bitmap
+//        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        val bitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888);
+        bitmap.copyPixelsFromBuffer(buffer)
+        val fileOutputStream = FileOutputStream(file)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+        Timber.e("bitmap is $bitmap")
+        bitmap?.let {
+//            // Save the Bitmap to a file
+//            fileOutputStream.write(bytes)
+//            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream)
+//            val fileSizeInBytes = file.length();
+//            Timber.e("After saving, file size in bytes is $fileSizeInBytes")
+        }
+        fileOutputStream.close()
+
+        Timber.e("File saved at: ${file.absolutePath}")
     }
 }
