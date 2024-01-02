@@ -147,22 +147,25 @@ class ScreenshotService : Service() {
         // Start capturing frames from the virtual display
         val runnable = object : Runnable {
             override fun run() {
-                Timber.e("Taking screenshot")
-                val image = imageReader.acquireLatestImage()
-                // store in external directory
-                image?.let {
-                    try {
-                        storeExternally(it)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    } finally {
-                        it.close()
+                Timber.e("Checking")
+                if (!keyguardManager.isKeyguardLocked) {
+                    Timber.e("Taking screenshot")
+                    val image = imageReader.acquireLatestImage()
+                    // store in external directory
+                    image?.let {
+                        try {
+                            storeExternally(it)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        } finally {
+                            it.close()
+                        }
                     }
                 }
 
-
                 // Schedule the next work after 10 seconds
                 handler.postDelayed(this, SCREENSHOT_INTERVAL)
+
             }
         }
         handler.postDelayed(runnable, SCREENSHOT_INTERVAL)
