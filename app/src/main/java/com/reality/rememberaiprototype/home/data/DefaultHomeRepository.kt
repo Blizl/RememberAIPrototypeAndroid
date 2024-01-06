@@ -11,26 +11,25 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.core.net.toUri
-import androidx.room.RoomDatabase
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.reality.rememberaiprototype.MainActivity
 import com.reality.rememberaiprototype.home.domain.HomeRepository
+import com.reality.rememberaiprototype.home.domain.LocalRepository
 import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class DefaultHomeRepository(
-    val contentResolver: ContentResolver,
     val application: Application,
-    val roomDatabase: RoomDatabase
+    val localRepo: LocalRepository
 ) : HomeRepository {
 
     override suspend fun fetchSavedImages(): List<String> {
         // return a list of images saved locally
-        return queryScreenshots("Screenshots", contentResolver).map { it.toString() }
+        return queryScreenshots("Screenshots", application.contentResolver).map { it.toString() }
     }
 
     override suspend fun toggleScreenshotRecord(): Result<Boolean> {
@@ -60,11 +59,11 @@ class DefaultHomeRepository(
         return suspendCancellableCoroutine { continuation ->
             val bitmap = if (Build.VERSION.SDK_INT < 28) {
                 MediaStore.Images
-                    .Media.getBitmap(contentResolver, bitmapPath.toUri())
+                    .Media.getBitmap(application.contentResolver, bitmapPath.toUri())
 
             } else {
                 val source = ImageDecoder
-                    .createSource(contentResolver, bitmapPath.toUri())
+                    .createSource(application.contentResolver, bitmapPath.toUri())
                 ImageDecoder.decodeBitmap(source)
             }
             val image = InputImage.fromBitmap(bitmap, 0)

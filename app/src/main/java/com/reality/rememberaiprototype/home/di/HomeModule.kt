@@ -2,10 +2,12 @@ package com.reality.rememberaiprototype.home.di
 
 import android.app.Application
 import androidx.room.Room
-import androidx.room.RoomDatabase
 import com.reality.rememberaiprototype.home.data.AppDatabase
 import com.reality.rememberaiprototype.home.data.DefaultHomeRepository
+import com.reality.rememberaiprototype.home.data.DefaultLocalRepository
+import com.reality.rememberaiprototype.home.data.MemoryDao
 import com.reality.rememberaiprototype.home.domain.HomeRepository
+import com.reality.rememberaiprototype.home.domain.LocalRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,16 +20,31 @@ import javax.inject.Singleton
 object HomeModule {
     @Provides
     @Singleton
-    fun providesImageRepository(application: Application, roomDatabase: RoomDatabase): HomeRepository {
-        return DefaultHomeRepository(contentResolver = application.contentResolver, application, roomDatabase)
+    fun providesImageRepository(
+        application: Application,
+        localRepository: LocalRepository
+    ): HomeRepository {
+        return DefaultHomeRepository(application, localRepository)
     }
 
     @Provides
     @Singleton
-    fun providesMemoryDatabase(application: Application): RoomDatabase {
+    fun providesLocalRepository(memoryDao: MemoryDao): LocalRepository {
+        return DefaultLocalRepository(memoryDao)
+    }
+
+    @Provides
+    @Singleton
+    fun providesMemoryDatabase(application: Application): AppDatabase {
         return Room.databaseBuilder(
             application.applicationContext,
             AppDatabase::class.java, "memory-database"
         ).build()
+    }
+
+    @Provides
+    @Singleton
+    fun providesMemoryDao(db: AppDatabase): MemoryDao {
+        return db.memoryDao()
     }
 }
