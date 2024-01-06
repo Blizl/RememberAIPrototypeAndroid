@@ -6,8 +6,10 @@ import com.reality.rememberaiprototype.home.data.AppDatabase
 import com.reality.rememberaiprototype.home.data.DefaultHomeRepository
 import com.reality.rememberaiprototype.home.data.DefaultLocalRepository
 import com.reality.rememberaiprototype.home.data.MemoryDao
+import com.reality.rememberaiprototype.home.data.MlKitTextRecognition
 import com.reality.rememberaiprototype.home.domain.HomeRepository
 import com.reality.rememberaiprototype.home.domain.LocalRepository
+import com.reality.rememberaiprototype.home.domain.TextRecognitionProcessor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,9 +24,10 @@ object HomeModule {
     @Singleton
     fun providesImageRepository(
         application: Application,
-        localRepository: LocalRepository
+        localRepository: LocalRepository,
+        textRecognitionProcessor: TextRecognitionProcessor
     ): HomeRepository {
-        return DefaultHomeRepository(application, localRepository)
+        return DefaultHomeRepository(application, localRepository, textRecognitionProcessor)
     }
 
     @Provides
@@ -46,5 +49,11 @@ object HomeModule {
     @Singleton
     fun providesMemoryDao(db: AppDatabase): MemoryDao {
         return db.memoryDao()
+    }
+
+    @Provides
+    @Singleton
+    fun providesTextRecognitionProcessor(application: Application): TextRecognitionProcessor {
+        return MlKitTextRecognition(application.contentResolver)
     }
 }

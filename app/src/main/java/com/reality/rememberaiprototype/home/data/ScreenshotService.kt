@@ -37,6 +37,7 @@ class ScreenshotService : Service() {
         private const val CHANNEL_ID = "SCREENSHOT_CHANNEL_ID"
         const val RECORD_SCREEN_RESULT_CODE = "RECORD_SCREEN_RESULT_CODE"
         const val RECORD_SCREEN_DATA = "RECORD_SCREEN_RESULT_DATA"
+        const val MEMORY_DIRECTORY = "Screenshots"
     }
 
     private var screenDensity: Float = 0f
@@ -108,7 +109,6 @@ class ScreenshotService : Service() {
         screenWidth = displayMetrics.widthPixels
         screenHeight = displayMetrics.heightPixels
         screenDensity = displayMetrics.density
-        Timber.e("screenWidth is $screenWidth, screenHeight is $screenHeight, screenDensity is $screenDensity")
         keyguardManager = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
         imageReader = ImageReader.newInstance(
             screenWidth, screenHeight,
@@ -132,7 +132,7 @@ class ScreenshotService : Service() {
                 Timber.e("onCreate(): starting foreground service")
                 startForeground(NOTIFICATION_ID, notification)
             } else {
-                Timber.e("onCreaete(): starting foreground service as foregournd sertice type media projection")
+                Timber.e("onCreate(): starting foreground service as foregournd sertice type media projection")
                 startForeground(
                     NOTIFICATION_ID, notification,
                     FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
@@ -175,7 +175,7 @@ class ScreenshotService : Service() {
         Timber.e("Storing externally")
         val externalFilesDir =
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-        val directory = File(externalFilesDir, "Screenshots")
+        val directory = File(externalFilesDir, MEMORY_DIRECTORY)
 
         if (!directory.exists()) {
             Timber.e("Directory doesn't exist")

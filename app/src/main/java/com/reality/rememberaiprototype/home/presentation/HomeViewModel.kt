@@ -26,7 +26,7 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
         null
     )
     val uiAction = _uiAction.asStateFlow()
-    private var images: Flow<List<String>> = flowOf()
+    private var images: Flow<Result<List<String>>> = flowOf()
 
     init {
         fetchData()
@@ -36,9 +36,14 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
         viewModelScope.launch(Dispatchers.IO) {
             val recording = repository.isScreenshotServiceRunning()
             images = flowOf(repository.fetchSavedImages())
-            images.collect {
-                setState(state.value.copy(images = it, recording = recording))
-                getStringFromImage(it[0])
+            images.collect {result ->
+                if (result.isSuccess) {
+                    result.getOrNull()?.let {
+                        setState(state.value.copy(images = it, recording = recording))
+                        getStringFromImage(it[0])
+                    }
+
+                }
             }
         }
 
@@ -62,8 +67,10 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
     private fun onRefresh() {
         viewModelScope.launch {
             images = flowOf(repository.fetchSavedImages())
-            images.collect {
-                setState(state.value.copy(images = it))
+            images.collect { result ->
+                if (result.isSuccess) {
+                    setState(state.value.copy(images = result.getOrNull() ?: emptyList()))
+                }
             }
         }
     }
@@ -84,9 +91,15 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
         // Debounce the user input before processing the images
         val debouncedSearch = images
             .debounce(debounceDuration)
-            .map { list ->
-                val filteredImages = list.filter { it.contains(text) }
-                HomeState(searching = true, searchQuery = text, images = filteredImages)
+            .map { result ->
+                if (result.isSuccess) {
+                    result.getOrNull()?.let {
+                        val filteredImages = it.filter { it.contains(text) }
+                        HomeState(searching = true, searchQuery = text, images = filteredImages)
+                    }
+                } else {
+                    HomeState(searching = false, searchQuery = text, images = emptyList())
+                }
             }
             .catch { e ->
                 // Handle exceptions if any occur during the search operation
@@ -98,7 +111,7 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
         // Launch a coroutine to collect the debounced search results and update the state
         viewModelScope.launch {
             debouncedSearch.collect { newState ->
-                setState(newState)
+                newState?.let { setState(it) }
             }
         }
     }
