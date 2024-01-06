@@ -6,16 +6,13 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.core.net.toUri
-import com.google.android.gms.tasks.OnFailureListener
-import com.google.android.gms.tasks.OnSuccessListener
+import androidx.room.RoomDatabase
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.reality.rememberaiprototype.MainActivity
@@ -28,6 +25,7 @@ import kotlin.coroutines.resumeWithException
 class DefaultHomeRepository(
     val contentResolver: ContentResolver,
     val application: Application,
+    val roomDatabase: RoomDatabase
 ) : HomeRepository {
 
     override suspend fun fetchSavedImages(): List<String> {
