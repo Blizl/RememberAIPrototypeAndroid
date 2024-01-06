@@ -2,8 +2,7 @@ package com.reality.rememberaiprototype.home.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.reality.rememberaiprototype.home.domain.ImageRepository
+import com.reality.rememberaiprototype.home.domain.HomeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -17,7 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(val repository: ImageRepository) : ViewModel() {
+class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewModel() {
 
     private val _state: MutableStateFlow<HomeState> =
         MutableStateFlow(HomeState())

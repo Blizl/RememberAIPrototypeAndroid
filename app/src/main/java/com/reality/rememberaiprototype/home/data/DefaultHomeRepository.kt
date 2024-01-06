@@ -9,13 +9,13 @@ import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.net.Uri
 import android.provider.MediaStore
 import com.reality.rememberaiprototype.MainActivity
-import com.reality.rememberaiprototype.home.domain.ImageRepository
+import com.reality.rememberaiprototype.home.domain.HomeRepository
 import timber.log.Timber
 
-class DefaultImageRepository(
+class DefaultHomeRepository(
     val contentResolver: ContentResolver,
     val application: Application
-) : ImageRepository {
+) : HomeRepository {
 
     override suspend fun fetchSavedImages(): List<String> {
         // return a list of images saved locally

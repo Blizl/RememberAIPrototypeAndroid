@@ -1,8 +1,8 @@
 package com.reality.rememberaiprototype.home.di
 
 import android.app.Application
-import com.reality.rememberaiprototype.home.data.DefaultImageRepository
-import com.reality.rememberaiprototype.home.domain.ImageRepository
+import com.reality.rememberaiprototype.home.data.DefaultHomeRepository
+import com.reality.rememberaiprototype.home.domain.HomeRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,7 +15,7 @@ import javax.inject.Singleton
 object HomeModule {
     @Provides
     @Singleton
-    fun providesImageRepository(application: Application): ImageRepository {
-        return DefaultImageRepository(contentResolver = application.contentResolver, application)
+    fun providesImageRepository(application: Application): HomeRepository {
+        return DefaultHomeRepository(contentResolver = application.contentResolver, application)
     }
 }
