@@ -14,7 +14,7 @@ import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class MlKitTextRecognition @Inject constructor(val contentResolver: ContentResolver) :
+class MlKitTextRecognition @Inject constructor(private val contentResolver: ContentResolver) :
     TextRecognitionProcessor {
     override suspend fun parseText(imagePath: String): String {
         return suspendCancellableCoroutine { continuation ->

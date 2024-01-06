@@ -6,58 +6,30 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-import android.graphics.ImageDecoder
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import androidx.core.net.toUri
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.reality.rememberaiprototype.MainActivity
 import com.reality.rememberaiprototype.home.domain.HomeRepository
 import com.reality.rememberaiprototype.home.domain.LocalRepository
 import com.reality.rememberaiprototype.home.domain.TextRecognitionProcessor
-import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
 import java.io.File
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 class DefaultHomeRepository(
-    val application: Application,
-    val localRepo: LocalRepository,
-    val textRecognitionProcessor: TextRecognitionProcessor
+    private val application: Application,
+    private val localRepo: LocalRepository,
+    private val textRecognitionProcessor: TextRecognitionProcessor
 ) : HomeRepository {
+    companion object {
+        const val DIRECTORY_PATH_KEY = "directory_path"
+    }
 
     override suspend fun fetchSavedImages(): Result<List<String>> {
 //        return queryScreenshots("Screenshots", application.contentResolver).map { it.toString() }
-        // First check if the local SQLLite database includes any memories
-        // - if no memory
-            // - look for screenshots folder and parse everything in a service
-        // - has memory
-            // - return list of memories
         try {
             val memories = localRepo.fetchAllMemories()
-            if (memories.isEmpty()) {
-                val externalFilesDir =
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                val directory = File(externalFilesDir, ScreenshotService.MEMORY_DIRECTORY)
-                if (directory.exists()) {
-                    // Start to parse all the screenshots into local database
-                    val serviceIntent = Intent(application.applicationContext, ImageTextRecognitionService::class.java)
-                    application.startService(serviceIntent)
-                    // Err I don't think this is right...
-                    return Result.failure(Exception("Parsing saved images"))
-                } else {
-                    // No folder
-                    return Result.success(emptyList())
-                }
-
-            }
             return Result.success(memories)
-
         } catch (e: Exception) {
             return Result.failure(e)
         }
@@ -87,8 +59,13 @@ class DefaultHomeRepository(
     }
 
     override suspend fun getParsedText(bitmapPath: String): String {
-
         return textRecognitionProcessor.parseText(bitmapPath)
+    }
+
+    override suspend fun parseImagesFromDirectory(directory: File) {
+        val serviceIntent = Intent(application.applicationContext, ImageTextRecognitionService::class.java)
+        serviceIntent.putExtra(DIRECTORY_PATH_KEY, directory.path)
+        application.startService(serviceIntent)
     }
 
     private fun queryScreenshots(folderName: String, contentResolver: ContentResolver): List<Uri> {

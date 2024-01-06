@@ -1,10 +1,13 @@
 package com.reality.rememberaiprototype.home.presentation
 
+import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reality.rememberaiprototype.home.data.ScreenshotService
 import com.reality.rememberaiprototype.home.domain.HomeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,8 +16,10 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewModel() {
 
@@ -39,14 +44,38 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
             images.collect {result ->
                 if (result.isSuccess) {
                     result.getOrNull()?.let {
-                        setState(state.value.copy(images = it, recording = recording))
-                        getStringFromImage(it[0])
+                        val externalFilesDir =
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                        val directory = File(externalFilesDir, ScreenshotService.MEMORY_DIRECTORY)
+                        if (it.isEmpty()) {
+                            if (directory.exists()) {
+                                parseImagesFromDirectory(directory)
+                            } else {
+                                onDirectoryDoesNotExist(it, recording)
+                            }
+                        } else {
+                            onImagesReceivedFromDatabase(it, recording)
+                        }
                     }
 
                 }
             }
         }
 
+    }
+
+    private suspend fun parseImagesFromDirectory(directory: File) {
+        repository.parseImagesFromDirectory(directory)
+    }
+
+    private fun onDirectoryDoesNotExist(images: List<String>, recording: Boolean) {
+        setState(state.value.copy(images = images, recording = recording))
+
+    }
+
+    private suspend fun onImagesReceivedFromDatabase(images: List<String>, recording: Boolean) {
+        setState(state.value.copy(images = images, recording = recording))
+        getStringFromImage(images[0])
     }
 
     private suspend fun getStringFromImage(image: String) {
