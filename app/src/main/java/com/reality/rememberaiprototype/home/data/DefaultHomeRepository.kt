@@ -6,15 +6,28 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
+import androidx.core.net.toUri
+import com.google.android.gms.tasks.OnFailureListener
+import com.google.android.gms.tasks.OnSuccessListener
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.Text
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.reality.rememberaiprototype.MainActivity
 import com.reality.rememberaiprototype.home.domain.HomeRepository
+import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class DefaultHomeRepository(
     val contentResolver: ContentResolver,
-    val application: Application
+    val application: Application,
 ) : HomeRepository {
 
     override suspend fun fetchSavedImages(): List<String> {
@@ -43,6 +56,29 @@ class DefaultHomeRepository(
 
     override suspend fun isScreenshotServiceRunning(): Boolean {
         return isServiceRunning(application, ScreenshotService::class.java)
+    }
+
+    override suspend fun getParsedText(bitmapPath: String): String {
+        return suspendCancellableCoroutine { continuation ->
+            val bitmap = if (Build.VERSION.SDK_INT < 28) {
+                MediaStore.Images
+                    .Media.getBitmap(contentResolver, bitmapPath.toUri())
+
+            } else {
+                val source = ImageDecoder
+                    .createSource(contentResolver, bitmapPath.toUri())
+                ImageDecoder.decodeBitmap(source)
+            }
+            val image = InputImage.fromBitmap(bitmap, 0)
+            val options = TextRecognizerOptions.Builder().build()
+            val recognizer = TextRecognition.getClient(options)
+            recognizer.process(image)
+                .addOnSuccessListener { text ->
+                    continuation.resume(text.text)
+            }.addOnFailureListener {
+                    continuation.resumeWithException(it)
+            }
+        }
     }
 
     private fun queryScreenshots(folderName: String, contentResolver: ContentResolver): List<Uri> {

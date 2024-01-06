@@ -38,8 +38,15 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
             images = flowOf(repository.fetchSavedImages())
             images.collect {
                 setState(state.value.copy(images = it, recording = recording))
+                getStringFromImage(it[0])
             }
         }
+
+    }
+
+    private suspend fun getStringFromImage(image: String) {
+        val result = repository.getParsedText(image)
+        setState(state.value.copy(mlText = result))
 
     }
 
