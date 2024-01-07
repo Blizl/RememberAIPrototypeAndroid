@@ -117,7 +117,7 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
             .map { result ->
                 if (result.isSuccess) {
                     result.getOrNull()?.let {
-                        val filteredImages = it.filter { it.imageText.contains(text) }
+                        val filteredImages = it.filter { it.imageText.lowercase().contains(text) }
                         HomeState(searching = true, searchQuery = text, images = filteredImages)
                     }
                 } else {
