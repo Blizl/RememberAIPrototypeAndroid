@@ -14,6 +14,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+@Singleton
 @Component(
     modules = [ApplicationModule::class]
 )
@@ -28,15 +29,3 @@ interface ImageTextRecognitionComponent {
 
     fun inject(service: ImageTextRecognitionService)
 }
-
-//@InstallIn(SingletonComponent::class)
-//@Module
-//abstract class ImageTextRecognitionModule {
-//
-//    companion object {
-//        @Provides
-//        fun provideTextRecognition(application: Application): TextRecognitionProcessor {
-//            return MlKitTextRecognition(application.contentResolver)
-//        }
-//    }
-//}

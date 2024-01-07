@@ -7,16 +7,15 @@ import dagger.BindsInstance
 import dagger.Component
 import javax.inject.Singleton
 
+@Singleton
 @Component(modules = [ApplicationModule::class])
 interface AppComponent {
 
-    // This method binds the Application instance to the AppComponent
     @Component.Builder
     interface Builder {
         @BindsInstance
         fun application(application: Application): Builder
 
-        // Method that links the Builder interface to the AppComponent
         fun build(): AppComponent
     }
 

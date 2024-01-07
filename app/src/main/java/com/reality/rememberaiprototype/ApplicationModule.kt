@@ -1,17 +1,16 @@
 package com.reality.rememberaiprototype
 
 import android.app.Application
-import android.content.Context
 import androidx.room.Room
 import com.reality.rememberaiprototype.home.data.AppDatabase
 import com.reality.rememberaiprototype.home.data.MemoryDao
 import com.reality.rememberaiprototype.home.data.MlKitTextRecognition
 import com.reality.rememberaiprototype.home.domain.TextRecognitionProcessor
-import dagger.Component
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 
 @Module
@@ -20,6 +19,7 @@ abstract class ApplicationModule {
 
     companion object {
         @Provides
+        @Singleton
         fun providesMemoryDatabase(application: Application): AppDatabase {
             return Room.databaseBuilder(
                 application.applicationContext,
@@ -28,11 +28,13 @@ abstract class ApplicationModule {
         }
 
         @Provides
+        @Singleton
         fun providesMemoryDao(db: AppDatabase): MemoryDao {
             return db.memoryDao()
         }
 
         @Provides
+        @Singleton
         fun providesTextRecognitionProcessor(application: Application): TextRecognitionProcessor {
             return MlKitTextRecognition(application.contentResolver)
         }
