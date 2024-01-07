@@ -26,7 +26,6 @@ class DefaultHomeRepository(
     }
 
     override suspend fun fetchSavedImages(): Result<List<String>> {
-//        return queryScreenshots("Screenshots", application.contentResolver).map { it.toString() }
         try {
             val memories = localRepo.fetchAllMemories()
             return Result.success(memories)
@@ -68,31 +67,7 @@ class DefaultHomeRepository(
         application.startService(serviceIntent)
     }
 
-    private fun queryScreenshots(folderName: String, contentResolver: ContentResolver): List<Uri> {
-        val selection = "${MediaStore.Images.Media.BUCKET_DISPLAY_NAME} = ?"
-        val selectionArgs = arrayOf(folderName)
-        val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
 
-        val uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        val projection = arrayOf(
-            MediaStore.Images.Media._ID,
-            MediaStore.Images.Media.DISPLAY_NAME,
-            MediaStore.Images.Media.DATE_ADDED
-        )
-
-        contentResolver.query(uri, projection, selection, selectionArgs, sortOrder)?.use { cursor ->
-            val screenshots = mutableListOf<Uri>()
-            while (cursor.moveToNext()) {
-                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
-                val contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                val imageUri = contentUri.buildUpon().appendPath(id.toString()).build()
-                screenshots.add(imageUri)
-            }
-            return screenshots
-        }
-
-        return emptyList()
-    }
 
     private fun isServiceRunning(context: Context, serviceClass: Class<*>): Boolean {
         val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
