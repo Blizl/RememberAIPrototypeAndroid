@@ -6,10 +6,12 @@ import com.reality.rememberaiprototype.home.data.AppDatabase
 import com.reality.rememberaiprototype.home.data.DefaultHomeRepository
 import com.reality.rememberaiprototype.home.data.DefaultLocalRepository
 import com.reality.rememberaiprototype.home.data.MemoryDao
-import com.reality.rememberaiprototype.home.data.MlKitTextRecognition
+import com.reality.rememberaiprototype.processors.data.MlKitTextRecognition
 import com.reality.rememberaiprototype.home.domain.HomeRepository
 import com.reality.rememberaiprototype.home.domain.LocalRepository
-import com.reality.rememberaiprototype.home.domain.TextRecognitionProcessor
+import com.reality.rememberaiprototype.home.imagetotext.data.DefaultImageToTextRepository
+import com.reality.rememberaiprototype.home.imagetotext.domain.ImageToTextRepository
+import com.reality.rememberaiprototype.processors.domain.TextRecognitionProcessor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -56,6 +58,14 @@ abstract class ApplicationModule {
         @Singleton
         fun providesLocalRepository(memoryDao: MemoryDao): LocalRepository {
             return DefaultLocalRepository(memoryDao)
+        }
+
+        @Provides
+        @Singleton
+        fun providesImageToTextRepository(
+            textRecognitionProcessor: TextRecognitionProcessor,
+            localRepository: LocalRepository): ImageToTextRepository {
+            return DefaultImageToTextRepository(textRecognitionProcessor, localRepository)
         }
 
     }

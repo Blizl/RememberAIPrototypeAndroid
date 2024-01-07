@@ -1,4 +1,4 @@
-package com.reality.rememberaiprototype.home.data
+package com.reality.rememberaiprototype.processors.data
 
 import android.content.ContentResolver
 import android.graphics.ImageDecoder
@@ -8,7 +8,7 @@ import androidx.core.net.toUri
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import com.reality.rememberaiprototype.home.domain.TextRecognitionProcessor
+import com.reality.rememberaiprototype.processors.domain.TextRecognitionProcessor
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
 import kotlin.coroutines.resume

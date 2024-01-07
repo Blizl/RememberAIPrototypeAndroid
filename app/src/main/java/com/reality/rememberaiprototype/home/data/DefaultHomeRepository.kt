@@ -8,7 +8,8 @@ import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import com.reality.rememberaiprototype.MainActivity
 import com.reality.rememberaiprototype.home.domain.HomeRepository
 import com.reality.rememberaiprototype.home.domain.LocalRepository
-import com.reality.rememberaiprototype.home.domain.TextRecognitionProcessor
+import com.reality.rememberaiprototype.processors.domain.TextRecognitionProcessor
+import com.reality.rememberaiprototype.home.imagetotext.ImageTextRecognitionService
 import timber.log.Timber
 import java.io.File
 
@@ -24,6 +25,7 @@ class DefaultHomeRepository(
     override suspend fun fetchSavedImages(): Result<List<String>> {
         try {
             val memories = localRepo.fetchAllMemories()
+            Timber.e("We got all the memories! size is ${memories.size}")
             return Result.success(memories)
         } catch (e: Exception) {
             return Result.failure(e)

@@ -64,7 +64,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Timber.e("MainActivity onCreate was called")
         setContent {
             RememberAIPrototypeTheme {
                 // A surface container using the 'background' color from the theme
@@ -122,11 +121,11 @@ class MainActivity : ComponentActivity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission is granted by the user
                 // Proceed with your logic after permission granted
-                Timber.e("Permission has been granted by user")
+//                Timber.e("Permission has been granted by user")
             } else {
                 // Permission is denied by the user
                 // Handle this scenario, show a message, or disable functionality
-                Timber.e("Permission denied by user")
+//                Timber.e("Permission denied by user")
             }
         }
     }
