@@ -6,7 +6,7 @@ import timber.log.Timber
 
 @HiltAndroidApp
 class RememberAiPrototypeApplication: Application() {
-    lateinit var component: AppComponent
+    private lateinit var component: AppComponent
     override fun onCreate() {
         super.onCreate()
         initializeDagger()
@@ -21,7 +21,4 @@ class RememberAiPrototypeApplication: Application() {
             .build()
     }
 
-    fun component(): AppComponent {
-        return component
-    }
 }

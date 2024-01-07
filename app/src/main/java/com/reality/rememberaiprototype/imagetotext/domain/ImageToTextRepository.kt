@@ -1,4 +1,4 @@
-package com.reality.rememberaiprototype.home.imagetotext.domain
+package com.reality.rememberaiprototype.imagetotext.domain
 
 import com.reality.rememberaiprototype.home.data.Memory
 

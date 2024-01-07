@@ -1,7 +1,7 @@
-package com.reality.rememberaiprototype.home.imagetotext.data
+package com.reality.rememberaiprototype.imagetotext.data
 
 import com.reality.rememberaiprototype.home.data.Memory
-import com.reality.rememberaiprototype.home.imagetotext.domain.ImageToTextRepository
+import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import com.reality.rememberaiprototype.home.domain.LocalRepository
 import com.reality.rememberaiprototype.processors.domain.TextRecognitionProcessor
 import javax.inject.Inject

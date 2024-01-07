@@ -25,7 +25,7 @@
         android:theme="@style/Theme.RememberAIPrototype"
         tools:targetApi="31">
         <service android:name=".home.data.ScreenshotService" android:foregroundServiceType="mediaProjection"/>
-        <service android:name=".home.imagetotext.ImageTextRecognitionService" />
+        <service android:name=".imagetotext.ImageTextRecognitionService" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

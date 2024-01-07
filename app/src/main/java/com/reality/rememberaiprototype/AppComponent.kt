@@ -2,7 +2,7 @@ package com.reality.rememberaiprototype
 
 
 import android.app.Application
-import com.reality.rememberaiprototype.home.imagetotext.ImageTextRecognitionService
+import com.reality.rememberaiprototype.imagetotext.ImageTextRecognitionService
 import dagger.BindsInstance
 import dagger.Component
 import javax.inject.Singleton

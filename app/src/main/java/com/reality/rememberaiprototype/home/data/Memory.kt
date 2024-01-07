@@ -11,3 +11,8 @@ data class Memory(
     @ColumnInfo(name = "content") val content: String?,
     @ColumnInfo(name = "creation_date") val creationDate: Long
     )
+
+fun Memory.toImage(): Image {
+    return Image(imagePath = path, imageText = content ?: "")
+
+}

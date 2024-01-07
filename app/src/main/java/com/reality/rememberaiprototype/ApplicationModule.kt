@@ -9,8 +9,8 @@ import com.reality.rememberaiprototype.home.data.MemoryDao
 import com.reality.rememberaiprototype.processors.data.MlKitTextRecognition
 import com.reality.rememberaiprototype.home.domain.HomeRepository
 import com.reality.rememberaiprototype.home.domain.LocalRepository
-import com.reality.rememberaiprototype.home.imagetotext.data.DefaultImageToTextRepository
-import com.reality.rememberaiprototype.home.imagetotext.domain.ImageToTextRepository
+import com.reality.rememberaiprototype.imagetotext.data.DefaultImageToTextRepository
+import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import com.reality.rememberaiprototype.processors.domain.TextRecognitionProcessor
 import dagger.Module
 import dagger.Provides

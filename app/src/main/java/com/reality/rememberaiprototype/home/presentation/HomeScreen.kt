@@ -77,10 +77,10 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 LazyColumn {
                     items(state.images.size) {
                         if (it == 0) {
-                            Text(state.mlText)
+                            Text(state.images.first().imageText)
                         }
                         ImageFromFile(
-                            filePath = state.images[it].toUri(),
+                            filePath = state.images[it].imagePath.toUri(),
                             LocalContext.current.contentResolver
                         )
                         Spacer(modifier = Modifier.padding(vertical = 24.dp))

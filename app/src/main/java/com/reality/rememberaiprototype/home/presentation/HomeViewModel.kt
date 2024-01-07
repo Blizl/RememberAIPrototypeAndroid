@@ -3,6 +3,7 @@ package com.reality.rememberaiprototype.home.presentation
 import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reality.rememberaiprototype.home.data.Image
 import com.reality.rememberaiprototype.home.data.ScreenshotService
 import com.reality.rememberaiprototype.home.domain.HomeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,7 +32,7 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
         null
     )
     val uiAction = _uiAction.asStateFlow()
-    private var images: Flow<Result<List<String>>> = flowOf()
+    private var images: Flow<Result<List<Image>>> = flowOf()
 
     init {
         fetchData()
@@ -68,20 +69,13 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
         repository.parseImagesFromDirectory(directory)
     }
 
-    private fun onDirectoryDoesNotExist(images: List<String>, recording: Boolean) {
+    private fun onDirectoryDoesNotExist(images: List<Image>, recording: Boolean) {
         setState(state.value.copy(images = images, recording = recording))
 
     }
 
-    private suspend fun onImagesReceivedFromDatabase(images: List<String>, recording: Boolean) {
+    private suspend fun onImagesReceivedFromDatabase(images: List<Image>, recording: Boolean) {
         setState(state.value.copy(images = images, recording = recording))
-        getStringFromImage(images[0])
-    }
-
-    private suspend fun getStringFromImage(image: String) {
-        val result = repository.parseImageToText(image)
-        setState(state.value.copy(mlText = result))
-
     }
 
     fun dispatchEvent(event: HomeUIEvent) {
@@ -123,7 +117,7 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
             .map { result ->
                 if (result.isSuccess) {
                     result.getOrNull()?.let {
-                        val filteredImages = it.filter { it.contains(text) }
+                        val filteredImages = it.filter { it.imageText.contains(text) }
                         HomeState(searching = true, searchQuery = text, images = filteredImages)
                     }
                 } else {

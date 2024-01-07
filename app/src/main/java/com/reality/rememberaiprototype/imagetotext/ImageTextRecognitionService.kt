@@ -1,4 +1,4 @@
-package com.reality.rememberaiprototype.home.imagetotext
+package com.reality.rememberaiprototype.imagetotext
 
 import android.app.Service
 import android.content.ContentResolver
@@ -11,8 +11,8 @@ import android.os.IBinder
 import android.provider.MediaStore
 import com.reality.rememberaiprototype.home.data.DefaultHomeRepository.Companion.DIRECTORY_PATH_KEY
 import com.reality.rememberaiprototype.home.data.Memory
-import com.reality.rememberaiprototype.home.imagetotext.di.DaggerImageTextRecognitionComponent
-import com.reality.rememberaiprototype.home.imagetotext.domain.ImageToTextRepository
+import com.reality.rememberaiprototype.imagetotext.di.DaggerImageTextRecognitionComponent
+import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

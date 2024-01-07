@@ -9,7 +9,7 @@ import com.reality.rememberaiprototype.MainActivity
 import com.reality.rememberaiprototype.home.domain.HomeRepository
 import com.reality.rememberaiprototype.home.domain.LocalRepository
 import com.reality.rememberaiprototype.processors.domain.TextRecognitionProcessor
-import com.reality.rememberaiprototype.home.imagetotext.ImageTextRecognitionService
+import com.reality.rememberaiprototype.imagetotext.ImageTextRecognitionService
 import timber.log.Timber
 import java.io.File
 
@@ -22,13 +22,13 @@ class DefaultHomeRepository(
         const val DIRECTORY_PATH_KEY = "directory_path"
     }
 
-    override suspend fun fetchSavedImages(): Result<List<String>> {
-        try {
+    override suspend fun fetchSavedImages(): Result<List<Image>> {
+        return try {
             val memories = localRepo.fetchAllMemories()
             Timber.e("We got all the memories! size is ${memories.size}")
-            return Result.success(memories)
+            Result.success(memories.map {it.toImage()})
         } catch (e: Exception) {
-            return Result.failure(e)
+            Result.failure(e)
         }
     }
 
@@ -78,3 +78,4 @@ class DefaultHomeRepository(
         return false
     }
 }
+
