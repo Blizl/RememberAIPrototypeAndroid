@@ -79,7 +79,7 @@ class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewMo
     }
 
     private suspend fun getStringFromImage(image: String) {
-        val result = repository.getParsedText(image)
+        val result = repository.parseImageToText(image)
         setState(state.value.copy(mlText = result))
 
     }

@@ -9,7 +9,7 @@ interface HomeRepository {
     suspend fun toggleScreenshotRecord(): Result<Boolean>
     suspend fun isScreenshotServiceRunning(): Boolean
 
-    suspend fun getParsedText(bitmapPath: String): String
+    suspend fun parseImageToText(bitmapPath: String): String
     suspend fun parseImagesFromDirectory(directory: File)
 
 }

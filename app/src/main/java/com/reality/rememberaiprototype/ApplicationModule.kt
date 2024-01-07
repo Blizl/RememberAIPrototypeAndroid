@@ -3,8 +3,12 @@ package com.reality.rememberaiprototype
 import android.app.Application
 import androidx.room.Room
 import com.reality.rememberaiprototype.home.data.AppDatabase
+import com.reality.rememberaiprototype.home.data.DefaultHomeRepository
+import com.reality.rememberaiprototype.home.data.DefaultLocalRepository
 import com.reality.rememberaiprototype.home.data.MemoryDao
 import com.reality.rememberaiprototype.home.data.MlKitTextRecognition
+import com.reality.rememberaiprototype.home.domain.HomeRepository
+import com.reality.rememberaiprototype.home.domain.LocalRepository
 import com.reality.rememberaiprototype.home.domain.TextRecognitionProcessor
 import dagger.Module
 import dagger.Provides
@@ -38,6 +42,22 @@ abstract class ApplicationModule {
         fun providesTextRecognitionProcessor(application: Application): TextRecognitionProcessor {
             return MlKitTextRecognition(application.contentResolver)
         }
+        @Provides
+        @Singleton
+        fun providesHomeRepository(
+            application: Application,
+            localRepository: LocalRepository,
+            textRecognitionProcessor: TextRecognitionProcessor
+        ): HomeRepository {
+            return DefaultHomeRepository(application, localRepository, textRecognitionProcessor)
+        }
+
+        @Provides
+        @Singleton
+        fun providesLocalRepository(memoryDao: MemoryDao): LocalRepository {
+            return DefaultLocalRepository(memoryDao)
+        }
+
     }
 
 }

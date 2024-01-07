@@ -2,13 +2,9 @@ package com.reality.rememberaiprototype.home.data
 
 import android.app.ActivityManager
 import android.app.Application
-import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-import android.net.Uri
-import android.os.Environment
-import android.provider.MediaStore
 import com.reality.rememberaiprototype.MainActivity
 import com.reality.rememberaiprototype.home.domain.HomeRepository
 import com.reality.rememberaiprototype.home.domain.LocalRepository
@@ -57,7 +53,7 @@ class DefaultHomeRepository(
         return isServiceRunning(application, ScreenshotService::class.java)
     }
 
-    override suspend fun getParsedText(bitmapPath: String): String {
+    override suspend fun parseImageToText(bitmapPath: String): String {
         return textRecognitionProcessor.parseText(bitmapPath)
     }
 
@@ -66,7 +62,6 @@ class DefaultHomeRepository(
         serviceIntent.putExtra(DIRECTORY_PATH_KEY, directory.path)
         application.startService(serviceIntent)
     }
-
 
 
     private fun isServiceRunning(context: Context, serviceClass: Class<*>): Boolean {

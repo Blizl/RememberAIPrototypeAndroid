@@ -9,17 +9,24 @@ import android.provider.MediaStore
 import com.reality.rememberaiprototype.home.data.DefaultHomeRepository.Companion.DIRECTORY_PATH_KEY
 import com.reality.rememberaiprototype.home.data.ScreenshotService.Companion.MEMORY_DIRECTORY
 import com.reality.rememberaiprototype.home.di.DaggerImageTextRecognitionComponent
+import com.reality.rememberaiprototype.home.domain.HomeRepository
 import com.reality.rememberaiprototype.home.domain.TextRecognitionProcessor
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class ImageTextRecognitionService: Service() {
+class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
 
     @Inject
-    lateinit var textRecognitionProcessor: TextRecognitionProcessor
+    lateinit var homeRepository: HomeRepository
+
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -27,9 +34,6 @@ class ImageTextRecognitionService: Service() {
 
     override fun onCreate() {
         super.onCreate()
-//            .applicationComponent((application as RememberAiPrototypeApplication).component())
-//            .build()
-//            .inject(this)
         DaggerImageTextRecognitionComponent.builder().application(application).build().inject(this)
         Timber.e("We just created the image text recogintion service to parse images")
     }
@@ -50,9 +54,17 @@ class ImageTextRecognitionService: Service() {
         val screenShots = queryScreenshots(directory.name, application.contentResolver).map { it.toString() }
         Timber.e("Screenshots size is ${screenShots.size}")
         for (screenshot in screenShots) {
-//            val text = parseText(screenshot)
+            launch(Dispatchers.IO) {
+                val text = homeRepository.parseImageToText(screenshot)
+                Timber.e("Parsed text is ${text}")
+            }
         }
 
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cancel()
     }
 
     private fun queryScreenshots(folderName: String, contentResolver: ContentResolver): List<Uri> {
