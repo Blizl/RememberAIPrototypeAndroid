@@ -184,7 +184,12 @@ class ScreenshotService : Service() {
             Timber.e("Directory doesn't exist")
             directory.mkdirs() // Create the directory if it doesn't exist
         }
-        val file = File(directory, "screenshot_${System.currentTimeMillis()}.jpg")
+        val extension = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            "webp"
+        } else {
+            "jpeg"
+        }
+        val file = File(directory, "screenshot_${System.currentTimeMillis()}.$extension")
         val planes = image.planes
         val buffer: ByteBuffer = planes[0].buffer
         val pixelStride: Int = planes[0].pixelStride
@@ -196,10 +201,15 @@ class ScreenshotService : Service() {
             Bitmap.Config.ARGB_8888
         );
         bitmap.copyPixelsFromBuffer(buffer)
-        val resized = Bitmap.createScaledBitmap(bitmap, SCREEN_RESOLUTION.width, SCREEN_RESOLUTION.height, true)
+        val resized = Bitmap.createScaledBitmap(
+            bitmap,
+            SCREEN_RESOLUTION.width,
+            SCREEN_RESOLUTION.height,
+            true
+        )
         val fileOutputStream = FileOutputStream(file)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 0, fileOutputStream)
+            resized.compress(Bitmap.CompressFormat.WEBP_LOSSY, 0, fileOutputStream)
         } else {
             resized.compress(Bitmap.CompressFormat.JPEG, IMAGE_QUALITY, fileOutputStream)
         }
@@ -210,8 +220,9 @@ class ScreenshotService : Service() {
 }
 
 sealed class Resolution(val width: Int, val height: Int) {
+    object LOW_RES_144 : Resolution(width = 144, height = 256)
     object SD_240 : Resolution(width = 240, height = 426)
     object SD_480 : Resolution(width = 480, height = 854)
     object HD_720 : Resolution(720, 1280)
-    object HD_1080: Resolution(width = 1080, height = 1920)
+    object HD_1080 : Resolution(width = 1080, height = 1920)
 }
