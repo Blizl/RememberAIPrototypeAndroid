@@ -37,9 +37,35 @@ class ScreenshotService : Service() {
         private const val CHANNEL_ID = "SCREENSHOT_CHANNEL_ID"
         const val RECORD_SCREEN_RESULT_CODE = "RECORD_SCREEN_RESULT_CODE"
         const val RECORD_SCREEN_DATA = "RECORD_SCREEN_RESULT_DATA"
-        const val MEMORY_DIRECTORY = "Screenshots"
+        const val MEMORY_DIRECTORY = "TEST_Screenshots"
+        const val IMAGE_QUALITY = 100
+        val SCREEN_RESOLUTION = Resolution.SD_480
     }
 
+    private var handler = Handler(Looper.getMainLooper())
+    private val screenShotRunnable = object : Runnable {
+        override fun run() {
+            Timber.e("Checking")
+            if (!keyguardManager.isKeyguardLocked) {
+                Timber.e("Taking screenshot")
+                val image = imageReader.acquireLatestImage()
+                // store in external directory
+                image?.let {
+                    try {
+                        storeExternally(it)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    } finally {
+                        it.close()
+                    }
+                }
+            }
+
+            // Schedule the next work after 10 seconds
+            handler.postDelayed(this, SCREENSHOT_INTERVAL)
+
+        }
+    }
     private var screenDensity: Float = 0f
     private var screenWidth: Int = 0
     private var screenHeight: Int = 0
@@ -69,14 +95,15 @@ class ScreenshotService : Service() {
             recordScreenResultCode,
             recordScreenData!!
         )
+        val handler = Handler(Looper.getMainLooper())
         mediaProjection.registerCallback(object : MediaProjection.Callback() {
             override fun onStop() {
                 // Handle the onStop event of the MediaProjection
                 // This method is called when the MediaProjection is stopped or released
+                handler.removeCallbacks(screenShotRunnable)
                 Timber.e("MediaProjection is stopped")
             }
         }, null)
-        val handler = Handler(Looper.getMainLooper())
         imageReader.setOnImageAvailableListener({ reader ->
         }, handler)
         mediaProjection.createVirtualDisplay(
@@ -143,32 +170,8 @@ class ScreenshotService : Service() {
 
 
     private fun takeScreenshot() {
-        val handler = Handler(Looper.getMainLooper())
         // Start capturing frames from the virtual display
-        val runnable = object : Runnable {
-            override fun run() {
-                Timber.e("Checking")
-                if (!keyguardManager.isKeyguardLocked) {
-                    Timber.e("Taking screenshot")
-                    val image = imageReader.acquireLatestImage()
-                    // store in external directory
-                    image?.let {
-                        try {
-                            storeExternally(it)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        } finally {
-                            it.close()
-                        }
-                    }
-                }
-
-                // Schedule the next work after 10 seconds
-                handler.postDelayed(this, SCREENSHOT_INTERVAL)
-
-            }
-        }
-        handler.postDelayed(runnable, SCREENSHOT_INTERVAL)
+        handler.postDelayed(screenShotRunnable, SCREENSHOT_INTERVAL)
     }
 
     private fun storeExternally(image: Image) {
@@ -181,22 +184,55 @@ class ScreenshotService : Service() {
             Timber.e("Directory doesn't exist")
             directory.mkdirs() // Create the directory if it doesn't exist
         }
-        val file = File(directory, "screenshot_${System.currentTimeMillis()}.jpg")
+        val extension = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { "webp" } else {"jpg"}
+        val file = File(directory, "screenshot_${System.currentTimeMillis()}.${extension}")
         val planes = image.planes
         val buffer: ByteBuffer = planes[0].buffer
         val pixelStride: Int = planes[0].pixelStride
         val rowStride: Int = planes[0].rowStride
-        val rowPadding: Int = rowStride - pixelStride * screenWidth
-        val bitmap = Bitmap.createBitmap(
-            screenWidth + rowPadding / pixelStride,
-            screenHeight,
-            Bitmap.Config.ARGB_8888
-        );
-        bitmap.copyPixelsFromBuffer(buffer)
+        Timber.e("Screen res width is ${SCREEN_RESOLUTION.width}")
+        Timber.e("Screen res height is ${SCREEN_RESOLUTION.height}")
+        val rowPadding: Int = rowStride - pixelStride * SCREEN_RESOLUTION.width
+
+// Calculate the scaled dimensions while maintaining the aspect ratio
+        val scaledWidth = screenWidth + rowPadding / pixelStride
+        val scaledHeight = screenHeight * SCREEN_RESOLUTION.height / screenWidth
+
+// Create a bitmap with the desired dimensions
+        val bitmap = Bitmap.createBitmap(scaledWidth, scaledHeight, Bitmap.Config.ARGB_8888)
+        Timber.e("we created the bitmap")
+        val bufferSize = buffer.remaining()
+        val bytesPerPixel = 4 // Assuming ARGB_8888 format
+        val pixelCount = bufferSize / bytesPerPixel
+        Timber.e("we set buffer position to 0")
+//        buffer.position(0)
+        if (pixelCount > 0) {
+            val pixelArray = IntArray(pixelCount)
+            buffer.asIntBuffer().get(pixelArray)
+            bitmap.setPixels(pixelArray, 0, scaledWidth, 0, 0, scaledWidth, scaledHeight)
+            Timber.e("We set the pixels actually")
+        } else {
+            Timber.e("No pixel data available or incorrect buffer size.")
+        }
+        Timber.e("we set the bixels")
+//        bitmap.copyPixelsFromBuffer(buffer)
+//        val resized = Bitmap.createScaledBitmap(bitmap, SCREEN_RESOLUTION.width, SCREEN_RESOLUTION.height, true)
         val fileOutputStream = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+//            bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 0, fileOutputStream)
+//        } else {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, IMAGE_QUALITY, fileOutputStream)
+//        }
+        Timber.e("We compressed the file")
         fileOutputStream.close()
 
         Timber.e("File saved at: ${file.absolutePath}")
     }
+}
+
+sealed class Resolution(val width: Int, val height: Int) {
+    object SD_240 : Resolution(width = 240, height = 426)
+    object SD_480 : Resolution(width = 480, height = 854)
+    object HD_720 : Resolution(720, 1280)
+    object HD_1080: Resolution(width = 1080, height = 1920)
 }

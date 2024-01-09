@@ -76,9 +76,6 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
             Box(Modifier.pullRefresh(refreshState)) {
                 LazyColumn {
                     items(state.images.size) {
-//                        if (it == 0) {
-//                            Text(state.images.first().imageText)
-//                        }
                         ImageFromFile(
                             filePath = state.images[it].imagePath.toUri(),
                             LocalContext.current.contentResolver

@@ -22,7 +22,7 @@ import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
-class HomeViewModel @Inject constructor(val repository: HomeRepository) : ViewModel() {
+class HomeViewModel @Inject constructor(private val repository: HomeRepository) : ViewModel() {
 
     private val _state: MutableStateFlow<HomeState> =
         MutableStateFlow(HomeState())
