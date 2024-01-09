@@ -184,46 +184,25 @@ class ScreenshotService : Service() {
             Timber.e("Directory doesn't exist")
             directory.mkdirs() // Create the directory if it doesn't exist
         }
-        val extension = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { "webp" } else {"jpg"}
-        val file = File(directory, "screenshot_${System.currentTimeMillis()}.${extension}")
+        val file = File(directory, "screenshot_${System.currentTimeMillis()}.jpg")
         val planes = image.planes
         val buffer: ByteBuffer = planes[0].buffer
         val pixelStride: Int = planes[0].pixelStride
         val rowStride: Int = planes[0].rowStride
-        Timber.e("Screen res width is ${SCREEN_RESOLUTION.width}")
-        Timber.e("Screen res height is ${SCREEN_RESOLUTION.height}")
-        val rowPadding: Int = rowStride - pixelStride * SCREEN_RESOLUTION.width
-
-// Calculate the scaled dimensions while maintaining the aspect ratio
-        val scaledWidth = screenWidth + rowPadding / pixelStride
-        val scaledHeight = screenHeight * SCREEN_RESOLUTION.height / screenWidth
-
-// Create a bitmap with the desired dimensions
-        val bitmap = Bitmap.createBitmap(scaledWidth, scaledHeight, Bitmap.Config.ARGB_8888)
-        Timber.e("we created the bitmap")
-        val bufferSize = buffer.remaining()
-        val bytesPerPixel = 4 // Assuming ARGB_8888 format
-        val pixelCount = bufferSize / bytesPerPixel
-        Timber.e("we set buffer position to 0")
-//        buffer.position(0)
-        if (pixelCount > 0) {
-            val pixelArray = IntArray(pixelCount)
-            buffer.asIntBuffer().get(pixelArray)
-            bitmap.setPixels(pixelArray, 0, scaledWidth, 0, 0, scaledWidth, scaledHeight)
-            Timber.e("We set the pixels actually")
-        } else {
-            Timber.e("No pixel data available or incorrect buffer size.")
-        }
-        Timber.e("we set the bixels")
-//        bitmap.copyPixelsFromBuffer(buffer)
-//        val resized = Bitmap.createScaledBitmap(bitmap, SCREEN_RESOLUTION.width, SCREEN_RESOLUTION.height, true)
+        val rowPadding: Int = rowStride - pixelStride * screenWidth
+        val bitmap = Bitmap.createBitmap(
+            screenWidth + rowPadding / pixelStride,
+            screenHeight,
+            Bitmap.Config.ARGB_8888
+        );
+        bitmap.copyPixelsFromBuffer(buffer)
+        val resized = Bitmap.createScaledBitmap(bitmap, SCREEN_RESOLUTION.width, SCREEN_RESOLUTION.height, true)
         val fileOutputStream = FileOutputStream(file)
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-//            bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 0, fileOutputStream)
-//        } else {
-            bitmap.compress(Bitmap.CompressFormat.JPEG, IMAGE_QUALITY, fileOutputStream)
-//        }
-        Timber.e("We compressed the file")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 0, fileOutputStream)
+        } else {
+            resized.compress(Bitmap.CompressFormat.JPEG, IMAGE_QUALITY, fileOutputStream)
+        }
         fileOutputStream.close()
 
         Timber.e("File saved at: ${file.absolutePath}")
