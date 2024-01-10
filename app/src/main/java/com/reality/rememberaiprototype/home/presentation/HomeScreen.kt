@@ -11,6 +11,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -93,10 +94,11 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
 
 @Composable
 fun ImageFromFile(filePath: Uri, contentResolver: ContentResolver) {
+    val originalBitmap = loadBitmap(filePath, contentResolver)
     Image(
-        bitmap = cropBitmapToHalfHeight(loadBitmap(filePath, contentResolver)).asImageBitmap(),
+        bitmap = cropBitmapToHalfHeight(originalBitmap).asImageBitmap(),
         contentDescription = null, // Provide content description if needed
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().aspectRatio(originalBitmap.width.toFloat() / originalBitmap.height)
     )
 }
 
