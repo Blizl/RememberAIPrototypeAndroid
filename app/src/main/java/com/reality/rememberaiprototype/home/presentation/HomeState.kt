@@ -7,4 +7,5 @@ data class HomeState(
     val searching: Boolean = true,
     val searchQuery: String = "",
     val recording: Boolean = false,
+    val parsing: Boolean = true
 )

@@ -8,13 +8,17 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
@@ -31,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -54,42 +59,74 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     when (uiAction) {
         else -> {}
     }
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Button(onClick = {viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick)}, modifier = Modifier.fillMaxWidth()) {
-            if (state.recording) Text("Stop Recording") else Text("Start Recording")
-        }
+    Column(modifier = Modifier.fillMaxSize()) {
         Text(
-            "History", modifier = Modifier.fillMaxWidth(),
+            "History", modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
             textAlign = TextAlign.Center, fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )
-        SearchBar(
-            query = state.searchQuery,
-            onQueryChange = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
-            onSearch = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
-            active = state.searching,
-            onActiveChange = { viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
-            placeholder = {Text("Search here")},
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Box(Modifier.pullRefresh(refreshState)) {
-                LazyColumn {
-                    items(state.images.size) {
-                        ImageFromFile(
-                            filePath = state.images[it].imagePath.toUri(),
-                            LocalContext.current.contentResolver
+
+        if (state.parsing) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicator(
+                )
+                Text(
+                    "Currently parsing screenshots from directory for searching",
+                    fontSize = 12.sp,
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                SearchBar(
+                    query = state.searchQuery,
+                    onQueryChange = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
+                    onSearch = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
+                    active = state.searching,
+                    onActiveChange = { viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
+                    placeholder = { Text("Search here") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    Box(Modifier.pullRefresh(refreshState)) {
+                        LazyColumn {
+                            items(state.images.size) {
+                                ImageFromFile(
+                                    filePath = state.images[it].imagePath.toUri(),
+                                    LocalContext.current.contentResolver
+                                )
+                                Spacer(modifier = Modifier.padding(vertical = 24.dp))
+                            }
+                        }
+
+                        PullRefreshIndicator(
+                            refreshing,
+                            refreshState,
+                            Modifier.align(Alignment.TopCenter)
                         )
-                        Spacer(modifier = Modifier.padding(vertical = 24.dp))
                     }
                 }
-
-                PullRefreshIndicator(refreshing, refreshState, Modifier.align(Alignment.TopCenter))
             }
-
+            Button(
+                onClick = { viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            ) {
+                if (state.recording) Text("Stop Recording") else Text("Start Recording")
+            }
         }
     }
+
 }
 
 @Composable
@@ -97,8 +134,12 @@ fun ImageFromFile(filePath: Uri, contentResolver: ContentResolver) {
     val originalBitmap = loadBitmap(filePath, contentResolver)
     Image(
         bitmap = cropBitmapToHalfHeight(originalBitmap).asImageBitmap(),
-        contentDescription = null, // Provide content description if needed
-        modifier = Modifier.fillMaxWidth().aspectRatio(originalBitmap.width.toFloat() / originalBitmap.height)
+        contentDescription = null,
+        modifier = Modifier
+            .fillMaxWidth()
+            // Divide the height by 2 since we cropped it half
+            .aspectRatio(originalBitmap.width.toFloat() / (originalBitmap.height / 2))
+            .clip(RoundedCornerShape(8.dp))
     )
 }
 
