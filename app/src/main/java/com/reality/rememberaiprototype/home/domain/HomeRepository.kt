@@ -12,5 +12,6 @@ interface HomeRepository {
 
     suspend fun parseImageToText(bitmapPath: String): String
     suspend fun parseImagesFromDirectory(directory: File)
+    suspend fun isParsingMemories(): Boolean
 
 }

@@ -9,6 +9,7 @@ import com.reality.rememberaiprototype.home.domain.HomeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,11 +36,17 @@ class HomeViewModel @Inject constructor(private val repository: HomeRepository) 
     private var images: Flow<Result<List<Image>>> = flowOf()
 
     init {
-        fetchData()
+        viewModelScope.launch(Dispatchers.IO) {
+            val parsingMemories = repository.isParsingMemories()
+            if (parsingMemories) {
+                setState(state.value.copy(parsing = true))
+            } else {
+                fetchData()
+            }
+        }
     }
 
-    private fun fetchData() {
-        viewModelScope.launch(Dispatchers.IO) {
+    private suspend fun fetchData() {
             val recording = repository.isScreenshotServiceRunning()
             images = flowOf(repository.fetchSavedImages())
             images.collect {result ->
@@ -60,7 +67,6 @@ class HomeViewModel @Inject constructor(private val repository: HomeRepository) 
                     }
 
                 }
-            }
         }
 
     }

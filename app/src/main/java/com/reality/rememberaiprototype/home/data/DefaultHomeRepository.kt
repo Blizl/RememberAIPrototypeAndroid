@@ -65,6 +65,10 @@ class DefaultHomeRepository(
         application.startService(serviceIntent)
     }
 
+    override suspend fun isParsingMemories(): Boolean {
+        return isServiceRunning(application.applicationContext, ImageTextRecognitionService::class.java)
+    }
+
 
     private fun isServiceRunning(context: Context, serviceClass: Class<*>): Boolean {
         val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
