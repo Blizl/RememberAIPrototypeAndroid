@@ -49,9 +49,9 @@ abstract class ApplicationModule {
         fun providesHomeRepository(
             application: Application,
             localRepository: LocalRepository,
-            textRecognitionProcessor: TextRecognitionProcessor
+            imageToTextRepository: ImageToTextRepository
         ): HomeRepository {
-            return DefaultHomeRepository(application, localRepository, textRecognitionProcessor)
+            return DefaultHomeRepository(application, localRepository, imageToTextRepository)
         }
 
         @Provides
@@ -63,9 +63,10 @@ abstract class ApplicationModule {
         @Provides
         @Singleton
         fun providesImageToTextRepository(
+            application: Application,
             textRecognitionProcessor: TextRecognitionProcessor,
             localRepository: LocalRepository): ImageToTextRepository {
-            return DefaultImageToTextRepository(textRecognitionProcessor, localRepository)
+            return DefaultImageToTextRepository(application, textRecognitionProcessor, localRepository)
         }
 
     }

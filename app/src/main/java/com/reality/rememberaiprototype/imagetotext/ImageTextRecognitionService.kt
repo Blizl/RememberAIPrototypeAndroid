@@ -17,6 +17,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -43,6 +45,13 @@ class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent == null) {
+            // Service is being recreated, perform cleanup if needed
+            repository.completeParsing()
+//            repository.parsingState.value = false
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
         val filePath = intent?.extras?.getString(DIRECTORY_PATH_KEY)
         Timber.e("we got the intent filepath is ${filePath}")
         val directory = filePath?.let { File(it) }
@@ -57,28 +66,37 @@ class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
     private fun processImagesToText(directory: File) {
         val screenShots = queryScreenshots(directory.name, application.contentResolver)
         Timber.e("Screenshots size is ${screenShots.size}")
-        for (screenshot in screenShots) {
-            val imageUri: String = screenshot.first.toString()
-            val filePath: String = screenshot.second
-            launch(Dispatchers.IO) {
-                val text = repository.parseImageToText(imageUri)
-                val creationTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val path = Paths.get(filePath)
-                    val attrs: BasicFileAttributes = Files.readAttributes(path, BasicFileAttributes::class.java)
-                    attrs.creationTime().toMillis()
-                } else {
-                    getCreationDateFromUri(application, screenshot.first)
+        launch(Dispatchers.IO) {
+            val deferredResults = screenShots.map { screenshot ->
+                val imageUri: String = screenshot.first.toString()
+                val filePath: String = screenshot.second
+                async(Dispatchers.IO) {
+                    val text = repository.parseImageToText(imageUri)
+                    val creationTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val path = Paths.get(filePath)
+                        val attrs: BasicFileAttributes = Files.readAttributes(path, BasicFileAttributes::class.java)
+                        attrs.creationTime().toMillis()
+                    } else {
+                        getCreationDateFromUri(application, screenshot.first)
+                    }
+                    Timber.e("Going to try to save")
+                    repository.saveMemory(Memory(path = imageUri, content = text, creationDate = creationTime ?: 0))
                 }
-                Timber.e("Going to try to save")
-                repository.saveMemory(Memory(path = imageUri, content = text, creationDate = creationTime ?: 0))
             }
+            deferredResults.awaitAll()
+            Timber.e("Completed parsing everything")
+            repository.completeParsing()
+            stopSelf()
         }
+
+
 
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cancel()
+        Timber.e("destorying ImageTextRecognition service ")
     }
 
     private fun queryScreenshots(folderName: String, contentResolver: ContentResolver): List<Pair<Uri, String>> {

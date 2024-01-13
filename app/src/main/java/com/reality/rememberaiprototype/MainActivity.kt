@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,12 +26,16 @@ import com.reality.rememberaiprototype.home.data.ScreenshotService
 import com.reality.rememberaiprototype.home.data.ScreenshotService.Companion.RECORD_SCREEN_DATA
 import com.reality.rememberaiprototype.home.data.ScreenshotService.Companion.RECORD_SCREEN_RESULT_CODE
 import com.reality.rememberaiprototype.home.presentation.HomeScreen
+import com.reality.rememberaiprototype.home.presentation.HomeViewModel
 import com.reality.rememberaiprototype.ui.theme.RememberAIPrototypeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    val viewModel: HomeViewModel by viewModels()
+
     private val PERMISSION_CODE = 101
     private val REQUEST_CODE_SCREEN_CAPTURE = 102
     private val legacyPermissions = arrayOf(
@@ -58,7 +63,6 @@ class MainActivity : ComponentActivity() {
             serviceIntent.putExtra(RECORD_SCREEN_RESULT_CODE, resultCode)
             serviceIntent.putExtra(RECORD_SCREEN_DATA, data)
             ContextCompat.startForegroundService(application.applicationContext, serviceIntent)
-
         }
     }
 
@@ -122,10 +126,11 @@ class MainActivity : ComponentActivity() {
                 // Permission is granted by the user
                 // Proceed with your logic after permission granted
 //                Timber.e("Permission has been granted by user")
+                viewModel.initialize()
             } else {
                 // Permission is denied by the user
                 // Handle this scenario, show a message, or disable functionality
-//                Timber.e("Permission denied by user")
+                Timber.e("Permission denied by user")
             }
         }
     }

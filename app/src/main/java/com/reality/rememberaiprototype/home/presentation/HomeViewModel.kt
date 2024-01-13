@@ -9,7 +9,6 @@ import com.reality.rememberaiprototype.home.domain.HomeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +17,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 
@@ -35,40 +35,43 @@ class HomeViewModel @Inject constructor(private val repository: HomeRepository) 
     val uiAction = _uiAction.asStateFlow()
     private var images: Flow<Result<List<Image>>> = flowOf()
 
-    init {
+    fun initialize() {
         viewModelScope.launch(Dispatchers.IO) {
-            val parsingMemories = repository.isParsingMemories()
-            if (parsingMemories) {
-                setState(state.value.copy(parsing = true))
-            } else {
-                fetchData()
+            val stateFlow = repository.isParsingMemories()
+            Timber.e("stateflow in Viewmodel is $stateFlow")
+            stateFlow.collect {parsing ->
+                Timber.e("Parsing in Viewmodel is $parsing")
+                if (parsing) {
+                    setState(state.value.copy(parsing = parsing))
+                } else {
+                    fetchData()
+                }
             }
         }
     }
 
     private suspend fun fetchData() {
-            val recording = repository.isScreenshotServiceRunning()
-            images = flowOf(repository.fetchSavedImages())
-            images.collect {result ->
-                if (result.isSuccess) {
-                    result.getOrNull()?.let {
-                        val externalFilesDir =
-                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                        val directory = File(externalFilesDir, ScreenshotService.MEMORY_DIRECTORY)
-                        if (it.isEmpty()) {
-                            if (directory.exists()) {
-                                parseImagesFromDirectory(directory)
-                            } else {
-                                onDirectoryDoesNotExist(it, recording)
-                            }
+        val recording = repository.isScreenshotServiceRunning()
+        images = flowOf(repository.fetchSavedImages())
+        images.collect { result ->
+            if (result.isSuccess) {
+                result.getOrNull()?.let {
+                    val externalFilesDir =
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                    val directory = File(externalFilesDir, ScreenshotService.MEMORY_DIRECTORY)
+                    if (it.isEmpty()) {
+                        if (directory.exists()) {
+                            parseImagesFromDirectory(directory)
                         } else {
-                            onImagesReceivedFromDatabase(it, recording)
+                            onDirectoryDoesNotExist(it, recording)
                         }
+                    } else {
+                        onImagesReceivedFromDatabase(it, recording)
                     }
-
                 }
-        }
 
+            }
+        }
     }
 
     private suspend fun parseImagesFromDirectory(directory: File) {
@@ -76,12 +79,12 @@ class HomeViewModel @Inject constructor(private val repository: HomeRepository) 
     }
 
     private fun onDirectoryDoesNotExist(images: List<Image>, recording: Boolean) {
-        setState(state.value.copy(images = images, recording = recording))
+        setState(state.value.copy(images = images, recording = recording, parsing = false))
 
     }
 
     private suspend fun onImagesReceivedFromDatabase(images: List<Image>, recording: Boolean) {
-        setState(state.value.copy(images = images, recording = recording))
+        setState(state.value.copy(images = images, recording = recording, parsing = false))
     }
 
     fun dispatchEvent(event: HomeUIEvent) {
