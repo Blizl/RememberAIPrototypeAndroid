@@ -37,15 +37,9 @@ class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
     @Inject
     @Singleton
     lateinit var repository: ImageToTextRepository
-//    val homeViewModel: HomeViewModel by viewModels()
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
-    }
-
-    override fun onCreate() {
-        super.onCreate()
-//        Timber.e("We just created the image text recogintion service to parse images, repo is $repository")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -67,7 +61,6 @@ class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
         directory?.let {
             processImagesToText(directory)
         }
-//        Timber.e("Starting the service, repo is $repository")
 
         return super.onStartCommand(intent, flags, startId)
     }
@@ -88,21 +81,14 @@ class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
                     } else {
                         getCreationDateFromUri(application, screenshot.first)
                     }
-//                    Timber.e("Going to try to save")
                     repository.saveMemory(Memory(path = imageUri, content = text, creationDate = creationTime ?: 0))
                 }
             }
             deferredResults.awaitAll()
             Timber.e("Completed parsing everything, setting complete parsing for ImageTextRepo: $repository")
-        }
-        launch {
             repository.completeParsing()
+            stopSelf()
         }
-        stopSelf()
-
-
-
-
     }
 
     override fun onDestroy() {

@@ -35,7 +35,6 @@ import javax.inject.Singleton
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     @Singleton private val repository: HomeRepository,
-//    private val imageToTextRepository: ImageToTextRepository,
     @Named(ApplicationModule.IO_DISPATCHER) private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -48,10 +47,6 @@ class HomeViewModel @Inject constructor(
     )
     val uiAction = _uiAction.asStateFlow()
     private var images: Flow<Result<List<Image>>> = flowOf()
-
-    init {
-//        Timber.e("in viewmodel, imagetextrepo is $imageTextRepo")
-    }
 
 
     fun initialize() {
