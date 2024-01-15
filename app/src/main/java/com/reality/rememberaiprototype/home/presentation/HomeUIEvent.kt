@@ -7,4 +7,5 @@ sealed class HomeUIEvent {
     object Refresh : HomeUIEvent()
     object HideParseDirectory : HomeUIEvent()
     object ParseMemoriesFromDirectory : HomeUIEvent()
+    object PermissionsDenied : HomeUIEvent()
 }

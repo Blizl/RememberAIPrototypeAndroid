@@ -15,18 +15,12 @@ import com.reality.rememberaiprototype.processors.domain.TextRecognitionProcesso
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.components.ViewModelComponent
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import javax.inject.Named
-import javax.inject.Scope
 import javax.inject.Singleton
 
-
-@Scope
-@Retention(AnnotationRetention.RUNTIME)
-annotation class RunTimeScope
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -76,5 +70,15 @@ object ApplicationModule {
     @Named(IO_DISPATCHER)
     fun providesIODispatcher(): CoroutineDispatcher {
         return Dispatchers.IO
+    }
+
+    @Provides
+    @Singleton
+    fun providesHomeRepository(
+        application: Application,
+        localRepository: LocalRepository,
+        imageToTextRepository: ImageToTextRepository
+    ): HomeRepository {
+        return DefaultHomeRepository(application, localRepository, imageToTextRepository)
     }
 }

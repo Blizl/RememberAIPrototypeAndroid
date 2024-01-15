@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
@@ -67,7 +68,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
         HomeUIAction.HideParseDirectory -> showParseDirectoryDialog = false
         HomeUIAction.ShowGenericError -> Toast.makeText(
             LocalContext.current,
-            "Something went wrong!",
+            stringResource(R.string.something_went_wrong),
             Toast.LENGTH_SHORT
         ).show()
 
@@ -88,8 +89,26 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 textAlign = TextAlign.Center, fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
-
-            if (state.parsing) {
+            if (state.showPermissionsDenied) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        stringResource(R.string.permission_needed),
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Button(
+                        onClick = {}
+                    ) {
+                        Text(stringResource(R.string.add_permissions))
+                    }
+                }
+            } else if (state.parsing) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,

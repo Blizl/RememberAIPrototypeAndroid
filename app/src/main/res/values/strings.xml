@@ -9,4 +9,7 @@
     <string name="start_recording">Start Recording</string>
     <string name="currently_parsing_screenshots_from_directory_for_searching">Currently parsing screenshots from directory for searching</string>
     <string name="history">History</string>
+    <string name="something_went_wrong">Something went wrong!</string>
+    <string name="permission_needed">External Storage and Screen Recording Permissions are needed to use this app</string>
+    <string name="add_permissions">Add Permissions</string>
 </resources>

@@ -5,14 +5,10 @@ import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.reality.rememberaiprototype.ApplicationModule
-import com.reality.rememberaiprototype.RunTimeScope
 import com.reality.rememberaiprototype.home.data.Image
 import com.reality.rememberaiprototype.home.data.ScreenshotService
 import com.reality.rememberaiprototype.home.domain.HomeRepository
-import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.scopes.ActivityRetainedScoped
-import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -48,18 +44,28 @@ class HomeViewModel @Inject constructor(
     val uiAction = _uiAction.asStateFlow()
     private var images: Flow<Result<List<Image>>> = flowOf()
 
+    fun dispatchEvent(event: HomeUIEvent) {
+        when (event) {
+            is HomeUIEvent.Search -> onSearchTextChange(event.query)
+            is HomeUIEvent.ToggleSearch -> onToggleSearch()
+            HomeUIEvent.PrimaryButtonClick -> onPrimaryButtonClick()
+            HomeUIEvent.Refresh -> onRefresh()
+            HomeUIEvent.HideParseDirectory -> {
+                sendUiAction(HomeUIAction.HideParseDirectory)
+            }
+            HomeUIEvent.ParseMemoriesFromDirectory -> onParseImagesFromDirectory()
+            HomeUIEvent.PermissionsDenied -> setState(HomeState(showPermissionsDenied = true))
+        }
+    }
+
 
     fun initialize() {
-        Timber.e("We are in initialize of HomeViewModel")
         viewModelScope.launch {
             val stateFlow = repository.isParsingMemories
-            Timber.e("Stateflow that we got is $stateFlow")
             stateFlow.collectLatest { parsing ->
-                Timber.e("Got new value from parsing state in Viewmodel: $parsing")
                 if (parsing) {
                     setState(state.value.copy(parsing = true))
                 } else {
-                    Timber.e("Not parsing will fetch data")
                     fetchData()
                 }
             }
@@ -101,8 +107,6 @@ class HomeViewModel @Inject constructor(
     private fun onParseImagesFromDirectory() {
         viewModelScope.launch {
             sendUiAction(HomeUIAction.HideParseDirectory)
-//            setState(state.value.copy(parsing = true))
-
             val externalFilesDir =
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
             val directory = File(externalFilesDir, ScreenshotService.MEMORY_DIRECTORY)
@@ -118,18 +122,7 @@ class HomeViewModel @Inject constructor(
         setState(state.value.copy(images = images, recording = recording, parsing = false))
     }
 
-    fun dispatchEvent(event: HomeUIEvent) {
-        when (event) {
-            is HomeUIEvent.Search -> onSearchTextChange(event.query)
-            is HomeUIEvent.ToggleSearch -> onToggleSearch()
-            HomeUIEvent.PrimaryButtonClick -> onPrimaryButtonClick()
-            HomeUIEvent.Refresh -> onRefresh()
-            HomeUIEvent.HideParseDirectory -> {
-                sendUiAction(HomeUIAction.HideParseDirectory)
-            }
-            HomeUIEvent.ParseMemoriesFromDirectory -> onParseImagesFromDirectory()
-        }
-    }
+
 
     private fun onRefresh() {
         viewModelScope.launch(dispatcher) {

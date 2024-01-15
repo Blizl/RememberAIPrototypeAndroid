@@ -22,10 +22,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.reality.rememberaiprototype.home.data.ScreenshotService
 import com.reality.rememberaiprototype.home.data.ScreenshotService.Companion.RECORD_SCREEN_DATA
 import com.reality.rememberaiprototype.home.data.ScreenshotService.Companion.RECORD_SCREEN_RESULT_CODE
 import com.reality.rememberaiprototype.home.presentation.HomeScreen
+import com.reality.rememberaiprototype.home.presentation.HomeUIEvent
 import com.reality.rememberaiprototype.home.presentation.HomeViewModel
 import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import com.reality.rememberaiprototype.ui.theme.RememberAIPrototypeTheme
@@ -133,6 +135,7 @@ class MainActivity : ComponentActivity() {
                 // Permission is denied by the user
                 // Handle this scenario, show a message, or disable functionality
                 Timber.e("Permission denied by user")
+                viewModel.dispatchEvent(HomeUIEvent.PermissionsDenied)
             }
         }
     }
