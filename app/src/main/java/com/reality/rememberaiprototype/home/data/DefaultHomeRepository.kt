@@ -3,20 +3,17 @@ package com.reality.rememberaiprototype.home.data
 import android.app.Application
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import androidx.core.content.ContextCompat
 import com.reality.rememberaiprototype.MainActivity
 import com.reality.rememberaiprototype.home.domain.HomeRepository
 import com.reality.rememberaiprototype.home.domain.LocalRepository
 import com.reality.rememberaiprototype.imagetotext.ImageTextRecognitionService
 import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import com.reality.rememberaiprototype.utils.isServiceRunning
-import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 import javax.inject.Singleton
@@ -31,23 +28,11 @@ class DefaultHomeRepository(
     companion object {
         const val DIRECTORY_PATH_KEY = "directory_path"
     }
-//    val _isParsingMemories: MutableStateFlow<Boolean> = imageToTextRepository.parsingState
     override val isParsingMemories: StateFlow<Boolean> = imageToTextRepository.parsingState
 
     private val job = Job()
     override val coroutineContext: CoroutineContext
         get() = job + Dispatchers.IO
-
-
-    init {
-        Timber.e("we are in init of defaultHomerepository, imageTextrepo is $imageToTextRepository")
-//        launch {
-//            imageToTextRepository.parsingState.collect {
-//                Timber.e("We got a new parsing state from iamgeToTextRepo, setting to $it")
-//                isParsingMemories.value = it
-//            }
-//        }
-    }
 
 
     override suspend fun fetchSavedImages(): Result<List<Image>> {
@@ -60,8 +45,7 @@ class DefaultHomeRepository(
         }
     }
 
-    override suspend fun toggleScreenshotRecord(): Result<Boolean> {
-        Timber.e("Starting foreground service")
+    override suspend fun toggleScreenCapture(): Result<Boolean> {
         return try {
             val serviceIntent =
                 Intent(application.applicationContext, ScreenshotService::class.java)
@@ -100,6 +84,14 @@ class DefaultHomeRepository(
             Timber.e("Service is running, will not parse images")
         }
 
+    }
+
+    override fun startScreenCapture(data: Intent, resultCode: Int) {
+        val serviceIntent =
+            Intent(application.applicationContext, ScreenshotService::class.java)
+        serviceIntent.putExtra(ScreenshotService.RECORD_SCREEN_RESULT_CODE, resultCode)
+        serviceIntent.putExtra(ScreenshotService.RECORD_SCREEN_DATA, data)
+        ContextCompat.startForegroundService(application.applicationContext, serviceIntent)
     }
 
 }

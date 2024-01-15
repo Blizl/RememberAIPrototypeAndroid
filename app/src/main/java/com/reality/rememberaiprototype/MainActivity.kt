@@ -6,7 +6,6 @@ import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.READ_MEDIA_IMAGES
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -22,19 +21,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.reality.rememberaiprototype.home.data.ScreenshotService
-import com.reality.rememberaiprototype.home.data.ScreenshotService.Companion.RECORD_SCREEN_DATA
-import com.reality.rememberaiprototype.home.data.ScreenshotService.Companion.RECORD_SCREEN_RESULT_CODE
 import com.reality.rememberaiprototype.home.presentation.HomeScreen
 import com.reality.rememberaiprototype.home.presentation.HomeUIEvent
 import com.reality.rememberaiprototype.home.presentation.HomeViewModel
-import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import com.reality.rememberaiprototype.ui.theme.RememberAIPrototypeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -42,6 +34,7 @@ class MainActivity : ComponentActivity() {
 
     private val PERMISSION_CODE = 101
     private val REQUEST_CODE_SCREEN_CAPTURE = 102
+    private val SCREEN_CAPTURE_ACCEPTED_RESULT_CODE = -1
     private val legacyPermissions = arrayOf(
         READ_EXTERNAL_STORAGE,
         WRITE_EXTERNAL_STORAGE,
@@ -62,11 +55,14 @@ class MainActivity : ComponentActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_SCREEN_CAPTURE) {
-            val serviceIntent =
-                Intent(application.applicationContext, ScreenshotService::class.java)
-            serviceIntent.putExtra(RECORD_SCREEN_RESULT_CODE, resultCode)
-            serviceIntent.putExtra(RECORD_SCREEN_DATA, data)
-            ContextCompat.startForegroundService(application.applicationContext, serviceIntent)
+            if (resultCode == SCREEN_CAPTURE_ACCEPTED_RESULT_CODE) {
+                data?.let {
+                    viewModel.dispatchEvent(HomeUIEvent.ScreenShotCaptureClicked(it, resultCode))
+                }
+            } else {
+                viewModel.dispatchEvent(HomeUIEvent.ScreenShotCaptureCancelled)
+            }
+
         }
     }
 

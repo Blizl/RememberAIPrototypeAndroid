@@ -1,6 +1,6 @@
 package com.reality.rememberaiprototype.home.presentation
 
-import android.app.Application
+import android.content.Intent
 import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Named
@@ -55,7 +54,13 @@ class HomeViewModel @Inject constructor(
             }
             HomeUIEvent.ParseMemoriesFromDirectory -> onParseImagesFromDirectory()
             HomeUIEvent.PermissionsDenied -> setState(HomeState(showPermissionsDenied = true))
+            is HomeUIEvent.ScreenShotCaptureClicked -> onScreenShotCaptureClicked(event.data, event.resultCode)
+            HomeUIEvent.ScreenShotCaptureCancelled -> setState(state.value.copy(recording = false))
         }
+    }
+
+    private fun onScreenShotCaptureClicked(data: Intent, resultCode: Int) {
+        repository.startScreenCapture(data, resultCode)
     }
 
 
@@ -137,9 +142,11 @@ class HomeViewModel @Inject constructor(
 
     private fun onPrimaryButtonClick() {
         viewModelScope.launch(dispatcher) {
-            val result = repository.toggleScreenshotRecord()
+            val result = repository.toggleScreenCapture()
             if (result.isSuccess) {
                 setState(state.value.copy(recording = result.getOrNull() == true))
+            } else {
+                sendUiAction(HomeUIAction.ShowGenericError)
             }
         }
     }
@@ -169,7 +176,7 @@ class HomeViewModel @Inject constructor(
             }
 
         // Launch a coroutine to collect the debounced search results and update the state
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcher) {
             debouncedSearch.collect { newState ->
                 newState?.let { setState(it) }
             }
@@ -181,13 +188,13 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun setState(newState: HomeState) {
-        viewModelScope.launch(Dispatchers.Main) {
+        viewModelScope.launch(dispatcher) {
             _state.emit(newState)
         }
     }
 
     private fun sendUiAction(newUiAction: HomeUIAction) {
-        viewModelScope.launch(Dispatchers.Main) {
+        viewModelScope.launch(dispatcher) {
             _uiAction.emit(newUiAction)
         }
     }
