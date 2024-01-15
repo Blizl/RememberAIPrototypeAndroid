@@ -59,6 +59,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     val uiAction by viewModel.uiAction.collectAsState()
     val refreshing by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
     var showParseDirectoryDialog by remember { mutableStateOf(false) }
     val refreshState = rememberPullRefreshState(refreshing, {
         viewModel.dispatchEvent(HomeUIEvent.Refresh)
@@ -128,11 +129,15 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                         .weight(1f)
                 ) {
                     SearchBar(
-                        query = state.searchQuery,
-                        onQueryChange = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
+                        query = searchQuery,
+                        onQueryChange = {
+                            searchQuery = it
+                            viewModel.dispatchEvent(HomeUIEvent.Search(it))
+                                        },
                         onSearch = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
                         active = state.searching,
-                        onActiveChange = { viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
+                        onActiveChange = {
+                            viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
                         placeholder = { Text(stringResource(R.string.search_here)) },
                         modifier = Modifier
                             .fillMaxWidth()

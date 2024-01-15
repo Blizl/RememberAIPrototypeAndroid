@@ -10,7 +10,6 @@ import com.reality.rememberaiprototype.home.data.ScreenshotService
 import com.reality.rememberaiprototype.home.domain.HomeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -78,7 +77,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun fetchData() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(dispatcher) {
             val recording = repository.isScreenshotServiceRunning()
             images = flowOf(repository.fetchSavedImages())
             images.collect { result ->
@@ -127,8 +126,6 @@ class HomeViewModel @Inject constructor(
         setState(state.value.copy(images = images, recording = recording, parsing = false))
     }
 
-
-
     private fun onRefresh() {
         viewModelScope.launch(dispatcher) {
             images = flowOf(repository.fetchSavedImages())
@@ -153,7 +150,7 @@ class HomeViewModel @Inject constructor(
 
 
     private fun onSearchTextChange(text: String) {
-        val debounceDuration = 500L // Debounce duration in milliseconds
+        val debounceDuration = 250L // Debounce duration in milliseconds
 
         // Debounce the user input before processing the images
         val debouncedSearch = images
