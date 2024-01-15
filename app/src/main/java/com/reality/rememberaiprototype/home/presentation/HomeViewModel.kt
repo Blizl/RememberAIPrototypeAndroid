@@ -28,7 +28,7 @@ import javax.inject.Singleton
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    @Singleton private val repository: HomeRepository,
+    private val repository: HomeRepository,
     @Named(ApplicationModule.IO_DISPATCHER) private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -64,7 +64,7 @@ class HomeViewModel @Inject constructor(
 
 
     fun initialize() {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcher) {
             val stateFlow = repository.isParsingMemories
             stateFlow.collectLatest { parsing ->
                 if (parsing) {

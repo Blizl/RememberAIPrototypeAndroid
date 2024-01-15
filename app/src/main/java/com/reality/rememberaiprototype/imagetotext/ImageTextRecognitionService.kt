@@ -32,7 +32,6 @@ import javax.inject.Singleton
 class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
 
     @Inject
-    @Singleton
     lateinit var repository: ImageToTextRepository
 
     override fun onBind(intent: Intent?): IBinder? {

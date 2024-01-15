@@ -189,7 +189,7 @@ fun ParseDirectoryDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
     AlertDialog(
         onDismissRequest = { onDismiss() },
         title = {
-            Text(text = stringResource(R.string.no_directory_found))
+            Text(text = stringResource(R.string.no_directory_found), fontWeight = FontWeight.Bold)
         },
         text = {
             Text(
