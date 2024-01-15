@@ -10,9 +10,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ViewModelComponent
 import dagger.hilt.android.scopes.ViewModelScoped
-import javax.inject.Scope
-import javax.inject.Singleton
-
 
 @InstallIn(ViewModelComponent::class)
 @Module

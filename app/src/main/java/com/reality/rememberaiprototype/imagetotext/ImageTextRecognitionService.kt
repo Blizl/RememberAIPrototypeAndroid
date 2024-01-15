@@ -9,11 +9,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.provider.MediaStore
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.reality.rememberaiprototype.RememberAiPrototypeApplication
 import com.reality.rememberaiprototype.home.data.DefaultHomeRepository.Companion.DIRECTORY_PATH_KEY
 import com.reality.rememberaiprototype.home.data.Memory
-import com.reality.rememberaiprototype.home.presentation.HomeViewModel
 import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -66,7 +63,7 @@ class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
     }
 
     private fun processImagesToText(directory: File) {
-        val screenShots = queryScreenshots(directory.name, application.contentResolver).subList(0, 10)
+        val screenShots = queryScreenshots(directory.name, application.contentResolver)
         Timber.e("Screenshots size is ${screenShots.size}, starting to parse")
         launch(Dispatchers.IO) {
             val deferredResults = screenShots.map { screenshot ->
