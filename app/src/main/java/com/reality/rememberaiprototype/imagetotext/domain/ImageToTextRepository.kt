@@ -8,6 +8,7 @@ interface ImageToTextRepository {
     suspend fun saveMemory(memory: Memory)
 
     val parsingState: StateFlow<Boolean>
-    fun completeParsing()
+    suspend fun completeParsing()
+    suspend fun startParsing()
 
 }

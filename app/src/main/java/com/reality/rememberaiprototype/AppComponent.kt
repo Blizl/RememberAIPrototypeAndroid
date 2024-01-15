@@ -8,7 +8,7 @@ import dagger.Component
 import javax.inject.Singleton
 
 @Singleton
-@Component(modules = [ApplicationModule::class])
+@Component(modules = [ApplicationModule::class, ViewModelModule::class])
 interface AppComponent {
 
     @Component.Builder
@@ -19,7 +19,7 @@ interface AppComponent {
         fun build(): AppComponent
     }
 
-    fun inject(application: RememberAiPrototypeApplication)
-
     fun inject(imageTextRecognitionService: ImageTextRecognitionService)
+    fun inject(mainActivity: MainActivity)
+//    fun inject(repository: ImageToTextRepository)
 }

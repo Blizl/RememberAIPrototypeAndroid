@@ -9,20 +9,46 @@ import com.reality.rememberaiprototype.home.domain.LocalRepository
 import com.reality.rememberaiprototype.imagetotext.ImageTextRecognitionService
 import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import com.reality.rememberaiprototype.utils.isServiceRunning
+import dagger.hilt.android.scopes.ViewModelScoped
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 import javax.inject.Singleton
+import kotlin.coroutines.CoroutineContext
 
 @Singleton
 class DefaultHomeRepository(
     private val application: Application,
     private val localRepo: LocalRepository,
-    private val imageToTextRepository: ImageToTextRepository
-) : HomeRepository {
+    @Singleton private val imageToTextRepository: ImageToTextRepository,
+) : HomeRepository, CoroutineScope {
     companion object {
         const val DIRECTORY_PATH_KEY = "directory_path"
     }
+//    val _isParsingMemories: MutableStateFlow<Boolean> = imageToTextRepository.parsingState
+    override val isParsingMemories: StateFlow<Boolean> = imageToTextRepository.parsingState
+
+    private val job = Job()
+    override val coroutineContext: CoroutineContext
+        get() = job + Dispatchers.IO
+
+
+    init {
+        Timber.e("we are in init of defaultHomerepository, imageTextrepo is $imageToTextRepository")
+//        launch {
+//            imageToTextRepository.parsingState.collect {
+//                Timber.e("We got a new parsing state from iamgeToTextRepo, setting to $it")
+//                isParsingMemories.value = it
+//            }
+//        }
+    }
+
 
     override suspend fun fetchSavedImages(): Result<List<Image>> {
         return try {
@@ -59,6 +85,7 @@ class DefaultHomeRepository(
     }
 
     override suspend fun parseImagesFromDirectory(directory: File) {
+        Timber.e("in defualt home repository, checking if service is running")
         if (!isServiceRunning(
                 application.applicationContext,
                 ImageTextRecognitionService::class.java
@@ -69,12 +96,11 @@ class DefaultHomeRepository(
             serviceIntent.putExtra(DIRECTORY_PATH_KEY, directory.path)
             Timber.e("Starting service to parse images")
             application.startService(serviceIntent)
+        } else {
+            Timber.e("Service is running, will not parse images")
         }
 
     }
 
-    override suspend fun isParsingMemories(): StateFlow<Boolean> {
-        return imageToTextRepository.parsingState
-    }
 }
 

@@ -1,12 +1,18 @@
 package com.reality.rememberaiprototype.home.presentation
 
+import android.app.Application
 import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.reality.rememberaiprototype.ApplicationModule
+import com.reality.rememberaiprototype.RunTimeScope
 import com.reality.rememberaiprototype.home.data.Image
 import com.reality.rememberaiprototype.home.data.ScreenshotService
 import com.reality.rememberaiprototype.home.domain.HomeRepository
+import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.scopes.ActivityRetainedScoped
+import dagger.hilt.android.scopes.ViewModelScoped
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -14,18 +20,23 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Singleton
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: HomeRepository,
-    private val dispatcher: CoroutineDispatcher
+    @Singleton private val repository: HomeRepository,
+//    private val imageToTextRepository: ImageToTextRepository,
+    @Named(ApplicationModule.IO_DISPATCHER) private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     private val _state: MutableStateFlow<HomeState> =
@@ -38,61 +49,77 @@ class HomeViewModel @Inject constructor(
     val uiAction = _uiAction.asStateFlow()
     private var images: Flow<Result<List<Image>>> = flowOf()
 
+    init {
+//        Timber.e("in viewmodel, imagetextrepo is $imageTextRepo")
+    }
+
+
     fun initialize() {
-        viewModelScope.launch(dispatcher) {
-            val stateFlow = repository.isParsingMemories()
-            stateFlow.collect {parsing ->
+        Timber.e("We are in initialize of HomeViewModel")
+        viewModelScope.launch {
+            val stateFlow = repository.isParsingMemories
+            Timber.e("Stateflow that we got is $stateFlow")
+            stateFlow.collectLatest { parsing ->
+                Timber.e("Got new value from parsing state in Viewmodel: $parsing")
                 if (parsing) {
                     setState(state.value.copy(parsing = true))
                 } else {
+                    Timber.e("Not parsing will fetch data")
                     fetchData()
                 }
             }
         }
     }
 
-    private suspend fun fetchData() {
-        val recording = repository.isScreenshotServiceRunning()
-        images = flowOf(repository.fetchSavedImages())
-        images.collect { result ->
-            if (result.isSuccess) {
-                result.getOrNull()?.let {
-                    val externalFilesDir =
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                    val directory = File(externalFilesDir, ScreenshotService.MEMORY_DIRECTORY)
-                    if (it.isEmpty()) {
-                        onEmptyImages(it, recording, directory)
-//                        if (directory.exists()) {
-//                            parseImagesFromDirectory(directory)
-//                        } else {
-//                            onDirectoryDoesNotExist(it, recording)
-//                        }
-                    } else {
-                        onImagesReceivedFromDatabase(it, recording)
+    private fun fetchData() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val recording = repository.isScreenshotServiceRunning()
+            images = flowOf(repository.fetchSavedImages())
+            images.collect { result ->
+                if (result.isSuccess) {
+                    result.getOrNull()?.let {
+                        val externalFilesDir =
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                        val directory = File(externalFilesDir, ScreenshotService.MEMORY_DIRECTORY)
+                        if (it.isEmpty()) {
+                            onEmptyImages(it, recording, directory)
+                        } else {
+                            onImagesReceivedFromDatabase(it, recording)
+                        }
                     }
+                } else {
+                    sendUiAction(HomeUIAction.ShowError(result.exceptionOrNull().toString()))
                 }
-
             }
         }
+
     }
 
-    private suspend fun onEmptyImages(images: List<Image>, recording: Boolean, directory: File) {
+    private fun onEmptyImages(images: List<Image>, recording: Boolean, directory: File) {
         if (directory.exists()) {
-            _uiAction.emit(HomeUIAction.ShowParseDirectory)
+            sendUiAction(HomeUIAction.ShowParseDirectory)
         } else {
             onDirectoryDoesNotExist(images, recording)
         }
     }
 
-    private suspend fun parseImagesFromDirectory(directory: File) {
-        repository.parseImagesFromDirectory(directory)
+    private fun onParseImagesFromDirectory() {
+        viewModelScope.launch {
+            sendUiAction(HomeUIAction.HideParseDirectory)
+//            setState(state.value.copy(parsing = true))
+
+            val externalFilesDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val directory = File(externalFilesDir, ScreenshotService.MEMORY_DIRECTORY)
+            repository.parseImagesFromDirectory(directory)
+        }
     }
 
     private fun onDirectoryDoesNotExist(images: List<Image>, recording: Boolean) {
         setState(state.value.copy(images = images, recording = recording, parsing = false))
     }
 
-    private suspend fun onImagesReceivedFromDatabase(images: List<Image>, recording: Boolean) {
+    private fun onImagesReceivedFromDatabase(images: List<Image>, recording: Boolean) {
         setState(state.value.copy(images = images, recording = recording, parsing = false))
     }
 
@@ -102,12 +129,10 @@ class HomeViewModel @Inject constructor(
             is HomeUIEvent.ToggleSearch -> onToggleSearch()
             HomeUIEvent.PrimaryButtonClick -> onPrimaryButtonClick()
             HomeUIEvent.Refresh -> onRefresh()
-            HomeUIEvent.HideParseDirectory ->  {
-                viewModelScope.launch(dispatcher) {
-                    _uiAction.emit(HomeUIAction.HideParseDirectory)
-                }
-
+            HomeUIEvent.HideParseDirectory -> {
+                sendUiAction(HomeUIAction.HideParseDirectory)
             }
+            HomeUIEvent.ParseMemoriesFromDirectory -> onParseImagesFromDirectory()
         }
     }
 
@@ -168,8 +193,14 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun setState(newState: HomeState) {
-        viewModelScope.launch(dispatcher) {
+        viewModelScope.launch(Dispatchers.Main) {
             _state.emit(newState)
+        }
+    }
+
+    private fun sendUiAction(newUiAction: HomeUIAction) {
+        viewModelScope.launch(Dispatchers.Main) {
+            _uiAction.emit(newUiAction)
         }
     }
 }

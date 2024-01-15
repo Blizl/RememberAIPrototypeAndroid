@@ -27,10 +27,12 @@ import com.reality.rememberaiprototype.home.data.ScreenshotService.Companion.REC
 import com.reality.rememberaiprototype.home.data.ScreenshotService.Companion.RECORD_SCREEN_RESULT_CODE
 import com.reality.rememberaiprototype.home.presentation.HomeScreen
 import com.reality.rememberaiprototype.home.presentation.HomeViewModel
+import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import com.reality.rememberaiprototype.ui.theme.RememberAIPrototypeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
 import javax.inject.Inject
+import javax.inject.Singleton
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

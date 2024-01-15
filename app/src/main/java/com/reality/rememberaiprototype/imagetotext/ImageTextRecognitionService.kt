@@ -9,9 +9,11 @@ import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.provider.MediaStore
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.reality.rememberaiprototype.RememberAiPrototypeApplication
 import com.reality.rememberaiprototype.home.data.DefaultHomeRepository.Companion.DIRECTORY_PATH_KEY
 import com.reality.rememberaiprototype.home.data.Memory
-import com.reality.rememberaiprototype.imagetotext.di.DaggerImageTextRecognitionComponent
+import com.reality.rememberaiprototype.home.presentation.HomeViewModel
 import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -27,12 +29,15 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
 import javax.inject.Inject
+import javax.inject.Singleton
 
 @AndroidEntryPoint
 class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
 
     @Inject
+    @Singleton
     lateinit var repository: ImageToTextRepository
+//    val homeViewModel: HomeViewModel by viewModels()
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -40,32 +45,36 @@ class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
 
     override fun onCreate() {
         super.onCreate()
-        DaggerImageTextRecognitionComponent.builder().application(application).build().inject(this)
-        Timber.e("We just created the image text recogintion service to parse images")
+//        Timber.e("We just created the image text recogintion service to parse images, repo is $repository")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent == null) {
             // Service is being recreated, perform cleanup if needed
-            repository.completeParsing()
-//            repository.parsingState.value = false
+            launch {
+                repository.completeParsing()
+            }
+
             stopSelf(startId)
             return START_NOT_STICKY
         }
+        launch {
+            repository.startParsing()
+        }
+
         val filePath = intent?.extras?.getString(DIRECTORY_PATH_KEY)
-        Timber.e("we got the intent filepath is ${filePath}")
         val directory = filePath?.let { File(it) }
-        Timber.e("directory exists: ${directory?.exists()}")
         directory?.let {
             processImagesToText(directory)
         }
+//        Timber.e("Starting the service, repo is $repository")
 
         return super.onStartCommand(intent, flags, startId)
     }
 
     private fun processImagesToText(directory: File) {
-        val screenShots = queryScreenshots(directory.name, application.contentResolver)
-        Timber.e("Screenshots size is ${screenShots.size}")
+        val screenShots = queryScreenshots(directory.name, application.contentResolver).subList(0, 10)
+        Timber.e("Screenshots size is ${screenShots.size}, starting to parse")
         launch(Dispatchers.IO) {
             val deferredResults = screenShots.map { screenshot ->
                 val imageUri: String = screenshot.first.toString()
@@ -79,15 +88,18 @@ class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
                     } else {
                         getCreationDateFromUri(application, screenshot.first)
                     }
-                    Timber.e("Going to try to save")
+//                    Timber.e("Going to try to save")
                     repository.saveMemory(Memory(path = imageUri, content = text, creationDate = creationTime ?: 0))
                 }
             }
             deferredResults.awaitAll()
-            Timber.e("Completed parsing everything")
-            repository.completeParsing()
-            stopSelf()
+            Timber.e("Completed parsing everything, setting complete parsing for ImageTextRepo: $repository")
         }
+        launch {
+            repository.completeParsing()
+        }
+        stopSelf()
+
 
 
 

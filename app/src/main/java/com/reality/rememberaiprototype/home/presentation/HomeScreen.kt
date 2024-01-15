@@ -7,6 +7,7 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,7 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
-import timber.log.Timber
+import com.reality.rememberaiprototype.R
+import com.reality.rememberaiprototype.home.data.ScreenshotService
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
@@ -54,7 +57,7 @@ import timber.log.Timber
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     val uiAction by viewModel.uiAction.collectAsState()
-    var refreshing by remember { mutableStateOf(false) }
+    val refreshing by remember { mutableStateOf(false) }
     var showParseDirectoryDialog by remember { mutableStateOf(false) }
     val refreshState = rememberPullRefreshState(refreshing, {
         viewModel.dispatchEvent(HomeUIEvent.Refresh)
@@ -62,12 +65,24 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     when (uiAction) {
         HomeUIAction.ShowParseDirectory -> showParseDirectoryDialog = true
         HomeUIAction.HideParseDirectory -> showParseDirectoryDialog = false
+        HomeUIAction.ShowGenericError -> Toast.makeText(
+            LocalContext.current,
+            "Something went wrong!",
+            Toast.LENGTH_SHORT
+        ).show()
+
+        is HomeUIAction.ShowError -> Toast.makeText(
+            LocalContext.current,
+            (uiAction as HomeUIAction.ShowError).message,
+            Toast.LENGTH_SHORT
+        ).show()
+
         null -> {}
     }
-    Box(modifier = Modifier.fillMaxSize()){
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             Text(
-                "History", modifier = Modifier
+                stringResource(R.string.history), modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp),
                 textAlign = TextAlign.Center, fontSize = 20.sp,
@@ -83,7 +98,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                     CircularProgressIndicator(
                     )
                     Text(
-                        "Currently parsing screenshots from directory for searching",
+                        stringResource(R.string.currently_parsing_screenshots_from_directory_for_searching),
                         fontSize = 12.sp,
                     )
                 }
@@ -99,7 +114,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                         onSearch = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
                         active = state.searching,
                         onActiveChange = { viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
-                        placeholder = { Text("Search here") },
+                        placeholder = { Text(stringResource(R.string.search_here)) },
                         modifier = Modifier
                             .fillMaxWidth()
                     ) {
@@ -128,7 +143,9 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp)
                 ) {
-                    if (state.recording) Text("Stop Recording") else Text("Start Recording")
+                    if (state.recording) Text(stringResource(R.string.stop_recording)) else Text(
+                        stringResource(R.string.start_recording)
+                    )
                 }
             }
         }
@@ -136,47 +153,47 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
         if (showParseDirectoryDialog) {
             ParseDirectoryDialog({
                 viewModel.dispatchEvent(HomeUIEvent.HideParseDirectory)
+            }, {
+                viewModel.dispatchEvent(HomeUIEvent.ParseMemoriesFromDirectory)
             })
         }
     }
 }
 
 @Composable
-fun ParseDirectoryDialog(onDismiss: () -> Unit) {
+fun ParseDirectoryDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
     AlertDialog(
         onDismissRequest = { onDismiss() },
         title = {
-            Text(text = "No Directory Found")
+            Text(text = stringResource(R.string.no_directory_found))
         },
         text = {
-            Text("Would you like t")
+            Text(
+                stringResource(
+                    R.string.would_you_like_to_parse_images_from,
+                    ScreenshotService.MEMORY_DIRECTORY
+                )
+            )
         },
         confirmButton = {
             Button(
                 onClick = {
-//                    openDialog.value = false
-                    onDismiss()
+                    onConfirm()
                 }) {
-                Text("Confirm Button")
+                Text(stringResource(R.string.yes))
             }
         },
         dismissButton = {
             Button(
-
                 onClick = {
-//                    openDialog.value = false
                     onDismiss()
                 }) {
-                Text("Dismiss Button")
+                Text(stringResource(R.string.no))
             }
         }
     )
 }
 
-
-fun showParseDirectoryDialog() {
-
-}
 
 @Composable
 fun ImageFromFile(filePath: Uri, contentResolver: ContentResolver) {

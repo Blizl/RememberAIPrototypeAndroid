@@ -12,6 +12,6 @@ interface HomeRepository {
     suspend fun isScreenshotServiceRunning(): Boolean
 
     suspend fun parseImagesFromDirectory(directory: File)
-    suspend fun isParsingMemories(): StateFlow<Boolean>
+    val isParsingMemories: StateFlow<Boolean>
 
 }
