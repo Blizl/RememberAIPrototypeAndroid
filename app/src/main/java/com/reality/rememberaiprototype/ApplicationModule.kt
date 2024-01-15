@@ -16,6 +16,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import javax.inject.Singleton
 
 
@@ -67,6 +69,12 @@ abstract class ApplicationModule {
             textRecognitionProcessor: TextRecognitionProcessor,
             localRepository: LocalRepository): ImageToTextRepository {
             return DefaultImageToTextRepository(application, textRecognitionProcessor, localRepository)
+        }
+
+        @Provides
+        @Singleton
+        fun providesIODispatcher(): CoroutineDispatcher {
+            return Dispatchers.IO
         }
 
     }

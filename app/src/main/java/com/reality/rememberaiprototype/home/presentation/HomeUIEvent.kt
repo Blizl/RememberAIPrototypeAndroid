@@ -5,5 +5,6 @@ sealed class HomeUIEvent {
     object ToggleSearch: HomeUIEvent()
     object PrimaryButtonClick : HomeUIEvent()
     object Refresh : HomeUIEvent()
+    object HideParseDirectory : HomeUIEvent()
 
 }

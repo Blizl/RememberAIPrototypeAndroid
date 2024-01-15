@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import timber.log.Timber
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
@@ -53,79 +55,126 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     val uiAction by viewModel.uiAction.collectAsState()
     var refreshing by remember { mutableStateOf(false) }
+    var showParseDirectoryDialog by remember { mutableStateOf(false) }
     val refreshState = rememberPullRefreshState(refreshing, {
         viewModel.dispatchEvent(HomeUIEvent.Refresh)
     })
     when (uiAction) {
-        else -> {}
+        HomeUIAction.ShowParseDirectory -> showParseDirectoryDialog = true
+        HomeUIAction.HideParseDirectory -> showParseDirectoryDialog = false
+        null -> {}
     }
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            "History", modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            textAlign = TextAlign.Center, fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        if (state.parsing) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                CircularProgressIndicator(
-                )
-                Text(
-                    "Currently parsing screenshots from directory for searching",
-                    fontSize = 12.sp,
-                )
-            }
-        } else {
-            Box(
-                modifier = Modifier
+    Box(modifier = Modifier.fillMaxSize()){
+        Column(modifier = Modifier.fillMaxSize()) {
+            Text(
+                "History", modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                SearchBar(
-                    query = state.searchQuery,
-                    onQueryChange = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
-                    onSearch = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
-                    active = state.searching,
-                    onActiveChange = { viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
-                    placeholder = { Text("Search here") },
+                    .padding(vertical = 16.dp),
+                textAlign = TextAlign.Center, fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (state.parsing) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                    )
+                    Text(
+                        "Currently parsing screenshots from directory for searching",
+                        fontSize = 12.sp,
+                    )
+                }
+            } else {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .weight(1f)
                 ) {
-                    Box(Modifier.pullRefresh(refreshState)) {
-                        LazyColumn {
-                            items(state.images.size) {
-                                ImageFromFile(
-                                    filePath = state.images[it].imagePath.toUri(),
-                                    LocalContext.current.contentResolver
-                                )
-                                Spacer(modifier = Modifier.padding(vertical = 24.dp))
+                    SearchBar(
+                        query = state.searchQuery,
+                        onQueryChange = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
+                        onSearch = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
+                        active = state.searching,
+                        onActiveChange = { viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
+                        placeholder = { Text("Search here") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        Box(Modifier.pullRefresh(refreshState)) {
+                            LazyColumn {
+                                items(state.images.size) {
+                                    ImageFromFile(
+                                        filePath = state.images[it].imagePath.toUri(),
+                                        LocalContext.current.contentResolver
+                                    )
+                                    Spacer(modifier = Modifier.padding(vertical = 24.dp))
+                                }
                             }
-                        }
 
-                        PullRefreshIndicator(
-                            refreshing,
-                            refreshState,
-                            Modifier.align(Alignment.TopCenter)
-                        )
+                            PullRefreshIndicator(
+                                refreshing,
+                                refreshState,
+                                Modifier.align(Alignment.TopCenter)
+                            )
+                        }
                     }
                 }
-            }
-            Button(
-                onClick = { viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            ) {
-                if (state.recording) Text("Stop Recording") else Text("Start Recording")
+                Button(
+                    onClick = { viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                ) {
+                    if (state.recording) Text("Stop Recording") else Text("Start Recording")
+                }
             }
         }
+
+        if (showParseDirectoryDialog) {
+            ParseDirectoryDialog({
+                viewModel.dispatchEvent(HomeUIEvent.HideParseDirectory)
+            })
+        }
     }
+}
+
+@Composable
+fun ParseDirectoryDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = {
+            Text(text = "No Directory Found")
+        },
+        text = {
+            Text("Would you like t")
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+//                    openDialog.value = false
+                    onDismiss()
+                }) {
+                Text("Confirm Button")
+            }
+        },
+        dismissButton = {
+            Button(
+
+                onClick = {
+//                    openDialog.value = false
+                    onDismiss()
+                }) {
+                Text("Dismiss Button")
+            }
+        }
+    )
+}
+
+
+fun showParseDirectoryDialog() {
 
 }
 
