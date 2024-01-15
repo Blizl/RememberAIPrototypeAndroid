@@ -7,6 +7,7 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -34,10 +36,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,6 +49,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.reality.rememberaiprototype.R
+import com.reality.rememberaiprototype.home.data.ScreenshotService
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
@@ -52,82 +58,166 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     val uiAction by viewModel.uiAction.collectAsState()
-    var refreshing by remember { mutableStateOf(false) }
+    val refreshing by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var showParseDirectoryDialog by remember { mutableStateOf(false) }
     val refreshState = rememberPullRefreshState(refreshing, {
         viewModel.dispatchEvent(HomeUIEvent.Refresh)
     })
     when (uiAction) {
-        else -> {}
+        HomeUIAction.ShowParseDirectory -> showParseDirectoryDialog = true
+        HomeUIAction.HideParseDirectory -> showParseDirectoryDialog = false
+        HomeUIAction.ShowGenericError -> Toast.makeText(
+            LocalContext.current,
+            stringResource(R.string.something_went_wrong),
+            Toast.LENGTH_SHORT
+        ).show()
+
+        is HomeUIAction.ShowError -> Toast.makeText(
+            LocalContext.current,
+            (uiAction as HomeUIAction.ShowError).message,
+            Toast.LENGTH_SHORT
+        ).show()
+
+        null -> {}
     }
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            "History", modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            textAlign = TextAlign.Center, fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        if (state.parsing) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                CircularProgressIndicator(
-                )
-                Text(
-                    "Currently parsing screenshots from directory for searching",
-                    fontSize = 12.sp,
-                )
-            }
-        } else {
-            Box(
-                modifier = Modifier
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Text(
+                stringResource(R.string.history), modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                SearchBar(
-                    query = state.searchQuery,
-                    onQueryChange = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
-                    onSearch = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
-                    active = state.searching,
-                    onActiveChange = { viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
-                    placeholder = { Text("Search here") },
+                    .padding(vertical = 16.dp),
+                textAlign = TextAlign.Center, fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+            if (state.showPermissionsDenied) {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Box(Modifier.pullRefresh(refreshState)) {
-                        LazyColumn {
-                            items(state.images.size) {
-                                ImageFromFile(
-                                    filePath = state.images[it].imagePath.toUri(),
-                                    LocalContext.current.contentResolver
-                                )
-                                Spacer(modifier = Modifier.padding(vertical = 24.dp))
-                            }
-                        }
-
-                        PullRefreshIndicator(
-                            refreshing,
-                            refreshState,
-                            Modifier.align(Alignment.TopCenter)
-                        )
+                    Text(
+                        stringResource(R.string.permission_needed),
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Button(
+                        onClick = {}
+                    ) {
+                        Text(stringResource(R.string.add_permissions))
                     }
                 }
-            }
-            Button(
-                onClick = { viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            ) {
-                if (state.recording) Text("Stop Recording") else Text("Start Recording")
+            } else if (state.parsing) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                    )
+                    Text(
+                        stringResource(R.string.currently_parsing_screenshots_from_directory_for_searching),
+                        fontSize = 12.sp,
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    SearchBar(
+                        query = searchQuery,
+                        onQueryChange = {
+                            searchQuery = it
+                            viewModel.dispatchEvent(HomeUIEvent.Search(it))
+                                        },
+                        onSearch = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
+                        active = state.searching,
+                        onActiveChange = {
+                            viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
+                        placeholder = { Text(stringResource(R.string.search_here)) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        Box(Modifier.pullRefresh(refreshState)) {
+                            LazyColumn {
+                                items(state.images.size) {
+                                    ImageFromFile(
+                                        filePath = state.images[it].imagePath.toUri(),
+                                        LocalContext.current.contentResolver
+                                    )
+                                    Spacer(modifier = Modifier.padding(vertical = 24.dp))
+                                }
+                            }
+
+                            PullRefreshIndicator(
+                                refreshing,
+                                refreshState,
+                                Modifier.align(Alignment.TopCenter)
+                            )
+                        }
+                    }
+                }
+                Button(
+                    onClick = { viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                ) {
+                    if (state.recording) Text(stringResource(R.string.stop_recording)) else Text(
+                        stringResource(R.string.start_recording)
+                    )
+                }
             }
         }
-    }
 
+        if (showParseDirectoryDialog) {
+            ParseDirectoryDialog({
+                viewModel.dispatchEvent(HomeUIEvent.HideParseDirectory)
+            }, {
+                viewModel.dispatchEvent(HomeUIEvent.ParseMemoriesFromDirectory)
+            })
+        }
+    }
 }
+
+@Composable
+fun ParseDirectoryDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = {
+            Text(text = stringResource(R.string.no_directory_found), fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Text(
+                stringResource(
+                    R.string.would_you_like_to_parse_images_from,
+                    ScreenshotService.MEMORY_DIRECTORY
+                )
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onConfirm()
+                }) {
+                Text(stringResource(R.string.yes))
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = {
+                    onDismiss()
+                }) {
+                Text(stringResource(R.string.no))
+            }
+        }
+    )
+}
+
 
 @Composable
 fun ImageFromFile(filePath: Uri, contentResolver: ContentResolver) {

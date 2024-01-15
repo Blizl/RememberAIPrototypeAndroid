@@ -11,12 +11,13 @@ import android.os.IBinder
 import android.provider.MediaStore
 import com.reality.rememberaiprototype.home.data.DefaultHomeRepository.Companion.DIRECTORY_PATH_KEY
 import com.reality.rememberaiprototype.home.data.Memory
-import com.reality.rememberaiprototype.imagetotext.di.DaggerImageTextRecognitionComponent
 import com.reality.rememberaiprototype.imagetotext.domain.ImageToTextRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -25,6 +26,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
 import javax.inject.Inject
+import javax.inject.Singleton
 
 @AndroidEntryPoint
 class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
@@ -36,17 +38,22 @@ class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
         return null
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        DaggerImageTextRecognitionComponent.builder().application(application).build().inject(this)
-        Timber.e("We just created the image text recogintion service to parse images")
-    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent == null) {
+            // Service is being recreated, perform cleanup if needed
+            launch {
+                repository.completeParsing()
+            }
+
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+        launch {
+            repository.startParsing()
+        }
+
         val filePath = intent?.extras?.getString(DIRECTORY_PATH_KEY)
-        Timber.e("we got the intent filepath is ${filePath}")
         val directory = filePath?.let { File(it) }
-        Timber.e("directory exists: ${directory?.exists()}")
         directory?.let {
             processImagesToText(directory)
         }
@@ -56,29 +63,34 @@ class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {
 
     private fun processImagesToText(directory: File) {
         val screenShots = queryScreenshots(directory.name, application.contentResolver)
-        Timber.e("Screenshots size is ${screenShots.size}")
-        for (screenshot in screenShots) {
-            val imageUri: String = screenshot.first.toString()
-            val filePath: String = screenshot.second
-            launch(Dispatchers.IO) {
-                val text = repository.parseImageToText(imageUri)
-                val creationTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val path = Paths.get(filePath)
-                    val attrs: BasicFileAttributes = Files.readAttributes(path, BasicFileAttributes::class.java)
-                    attrs.creationTime().toMillis()
-                } else {
-                    getCreationDateFromUri(application, screenshot.first)
+        Timber.e("Screenshots size is ${screenShots.size}, starting to parse")
+        launch(Dispatchers.IO) {
+            val deferredResults = screenShots.map { screenshot ->
+                val imageUri: String = screenshot.first.toString()
+                val filePath: String = screenshot.second
+                async(Dispatchers.IO) {
+                    val text = repository.parseImageToText(imageUri)
+                    val creationTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val path = Paths.get(filePath)
+                        val attrs: BasicFileAttributes = Files.readAttributes(path, BasicFileAttributes::class.java)
+                        attrs.creationTime().toMillis()
+                    } else {
+                        getCreationDateFromUri(application, screenshot.first)
+                    }
+                    repository.saveMemory(Memory(path = imageUri, content = text, creationDate = creationTime ?: 0))
                 }
-                Timber.e("Going to try to save")
-                repository.saveMemory(Memory(path = imageUri, content = text, creationDate = creationTime ?: 0))
             }
+            deferredResults.awaitAll()
+            Timber.e("Completed parsing everything, setting complete parsing for ImageTextRepo: $repository")
+            repository.completeParsing()
+            stopSelf()
         }
-
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cancel()
+        Timber.e("destorying ImageTextRecognition service ")
     }
 
     private fun queryScreenshots(folderName: String, contentResolver: ContentResolver): List<Pair<Uri, String>> {

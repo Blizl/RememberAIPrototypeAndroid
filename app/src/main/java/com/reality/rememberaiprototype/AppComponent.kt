@@ -18,8 +18,4 @@ interface AppComponent {
 
         fun build(): AppComponent
     }
-
-    fun inject(application: RememberAiPrototypeApplication)
-
-    fun inject(imageTextRecognitionService: ImageTextRecognitionService)
 }
