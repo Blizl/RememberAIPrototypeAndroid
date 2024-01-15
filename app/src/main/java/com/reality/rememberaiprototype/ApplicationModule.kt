@@ -59,10 +59,11 @@ object ApplicationModule {
     @Provides
     @Singleton
     fun providesImageToTextRepository(
+        application: Application,
         textRecognitionProcessor: TextRecognitionProcessor,
         localRepository: LocalRepository
     ): ImageToTextRepository {
-        return DefaultImageToTextRepository(textRecognitionProcessor, localRepository)
+        return DefaultImageToTextRepository(application, textRecognitionProcessor, localRepository)
     }
 
     @Provides

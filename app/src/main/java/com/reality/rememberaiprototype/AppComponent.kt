@@ -18,8 +18,4 @@ interface AppComponent {
 
         fun build(): AppComponent
     }
-
-    fun inject(imageTextRecognitionService: ImageTextRecognitionService)
-    fun inject(mainActivity: MainActivity)
-//    fun inject(repository: ImageToTextRepository)
 }
