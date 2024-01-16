@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
+
 package com.reality.rememberaiprototype.home.presentation
 
 import android.annotation.SuppressLint
@@ -24,6 +26,7 @@ import androidx.compose.material.AlertDialog
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.PullRefreshState
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Button
@@ -51,11 +54,12 @@ import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.reality.rememberaiprototype.R
+import com.reality.rememberaiprototype.home.data.Image
 import com.reality.rememberaiprototype.home.data.ScreenshotService
 
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), requestPermission: () -> Unit = {}) {
     val state by viewModel.state.collectAsState()
@@ -106,64 +110,95 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), requestPermission: ()
                     })
                 }
             } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    SearchBar(
-                        query = searchQuery,
-                        onQueryChange = {
-                            searchQuery = it
-                            viewModel.dispatchEvent(HomeUIEvent.Search(it))
-                        },
-                        onSearch = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
-                        active = state.searching,
-                        onActiveChange = {
-                            viewModel.dispatchEvent(HomeUIEvent.ToggleSearch)
-                        },
-                        placeholder = { Text(stringResource(R.string.search_here)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    ) {
-                        Box(Modifier.pullRefresh(refreshState)) {
-                            LazyColumn {
-                                items(state.images.size) {
-                                    ImageFromFile(
-                                        filePath = state.images[it].imagePath.toUri(),
-                                        LocalContext.current.contentResolver
-                                    )
-                                    Spacer(modifier = Modifier.padding(vertical = 24.dp))
-                                }
-                            }
+                MemoriesScreen(modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                    searchQuery,
+                    onQueryChange = {
+                        searchQuery = it
+                        viewModel.dispatchEvent(HomeUIEvent.Search(it))
 
-                            PullRefreshIndicator(
-                                refreshing,
-                                refreshState,
-                                Modifier.align(Alignment.TopCenter)
-                            )
-                        }
-                    }
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                            .align(Alignment.BottomCenter)
-                    ) {
-                        RecordingButton(recording = state.recording) {
-                            viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick)
-                        }
-                    }
+                    },
+                    onSearch = {
+                        viewModel.dispatchEvent(HomeUIEvent.Search(it))
+                    },
+                    active = state.searching,
+                    onActiveChange = {
+                        viewModel.dispatchEvent(HomeUIEvent.ToggleSearch)
+                    },
+                    refreshState = refreshState,
+                    images = state.images,
+                    refreshing = refreshing,
+                    recording = state.recording,
+                    onRecordClick = { viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick) }
+                )
 
-                    ParseDirectoryDialog(showParseDirectoryDialog, {
-                        viewModel.dispatchEvent(HomeUIEvent.ParseDirectoryClosed)
-                    }, {
-                        viewModel.dispatchEvent(HomeUIEvent.ParseMemoriesFromDirectory)
-                    })
-                }
             }
-
         }
     }
+}
+
+@Composable
+fun MemoriesScreen(
+    modifier: Modifier,
+    searchQuery: String,
+    onQueryChange: (String) -> Unit,
+    onSearch: (String) -> Unit,
+    active: Boolean,
+    onActiveChange: () -> Unit,
+    refreshState: PullRefreshState,
+    images: List<Image>,
+    refreshing: Boolean,
+    recording: Boolean,
+    onRecordClick: () -> Unit
+) {
+    Box(
+        modifier = modifier
+    ) {
+        // Your existing content goes here
+        SearchBar(
+            query = searchQuery,
+            onQueryChange = { onQueryChange(it) },
+            onSearch = { onSearch(it) },
+            active = active,
+            onActiveChange = {
+                onActiveChange()
+            },
+            placeholder = { Text(stringResource(R.string.search_here)) },
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            Box(Modifier.pullRefresh(refreshState)) {
+                LazyColumn {
+                    items(images.size) {
+                        ImageFromFile(
+                            filePath = images[it].imagePath.toUri(),
+                            LocalContext.current.contentResolver
+                        )
+                        Spacer(modifier = Modifier.padding(vertical = 24.dp))
+                    }
+                }
+
+                PullRefreshIndicator(
+                    refreshing,
+                    refreshState,
+                    Modifier.align(Alignment.TopCenter)
+                )
+            }
+        }
+    }
+
+
+    // RecordingButton displayed at the bottom of the screen
+    RecordingButton(
+        recording = recording,
+        onRecordToggle = {
+            onRecordClick()
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    )
 }
 
 @Composable
@@ -238,11 +273,10 @@ fun EmptyImagesScreen(recording: Boolean, onRecordToggle: () -> Unit) {
 }
 
 @Composable
-fun RecordingButton(recording: Boolean, onRecordToggle: () -> Unit) {
+fun RecordingButton(recording: Boolean, modifier: Modifier = Modifier, onRecordToggle: () -> Unit) {
     Button(
         onClick = { onRecordToggle() },
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
     ) {
         if (recording) Text(stringResource(R.string.stop_recording)) else Text(
             stringResource(R.string.start_recording)
