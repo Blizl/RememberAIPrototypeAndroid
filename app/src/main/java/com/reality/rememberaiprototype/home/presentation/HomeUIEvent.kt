@@ -7,7 +7,7 @@ sealed class HomeUIEvent {
     object ToggleSearch : HomeUIEvent()
     object PrimaryButtonClick : HomeUIEvent()
     object Refresh : HomeUIEvent()
-    object HideParseDirectory : HomeUIEvent()
+    object ParseDirectoryClosed : HomeUIEvent()
     object ParseMemoriesFromDirectory : HomeUIEvent()
     object PermissionsDenied : HomeUIEvent()
     data class ScreenShotCaptureClicked(

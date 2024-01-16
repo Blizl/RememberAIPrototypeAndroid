@@ -2,7 +2,6 @@ package com.reality.rememberaiprototype.home.presentation
 
 import android.annotation.SuppressLint
 import android.content.ContentResolver
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
@@ -24,9 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.LocalContentColor
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.primarySurface
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -34,7 +30,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -105,7 +100,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), requestPermission: ()
                 Box {
                     EmptyImagesScreen(state.recording) { viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick) }
                     ParseDirectoryDialog(showParseDirectoryDialog, {
-                        viewModel.dispatchEvent(HomeUIEvent.HideParseDirectory)
+                        viewModel.dispatchEvent(HomeUIEvent.ParseDirectoryClosed)
                     }, {
                         viewModel.dispatchEvent(HomeUIEvent.ParseMemoriesFromDirectory)
                     })
@@ -160,7 +155,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), requestPermission: ()
                     }
 
                     ParseDirectoryDialog(showParseDirectoryDialog, {
-                        viewModel.dispatchEvent(HomeUIEvent.HideParseDirectory)
+                        viewModel.dispatchEvent(HomeUIEvent.ParseDirectoryClosed)
                     }, {
                         viewModel.dispatchEvent(HomeUIEvent.ParseMemoriesFromDirectory)
                     })

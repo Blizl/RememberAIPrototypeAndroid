@@ -47,12 +47,18 @@ class HomeViewModel @Inject constructor(
             is HomeUIEvent.ToggleSearch -> onToggleSearch()
             HomeUIEvent.PrimaryButtonClick -> onPrimaryButtonClick()
             HomeUIEvent.Refresh -> onRefresh()
-            HomeUIEvent.HideParseDirectory -> {
+            HomeUIEvent.ParseDirectoryClosed -> {
                 sendUiAction(HomeUIAction.HideParseDirectory)
+                setState(state.value.copy(hasEmptyMemoriesDirectory = true))
             }
+
             HomeUIEvent.ParseMemoriesFromDirectory -> onParseImagesFromDirectory()
             HomeUIEvent.PermissionsDenied -> setState(HomeState(showPermissionsDenied = true))
-            is HomeUIEvent.ScreenShotCaptureClicked -> onScreenShotCaptureClicked(event.data, event.resultCode)
+            is HomeUIEvent.ScreenShotCaptureClicked -> onScreenShotCaptureClicked(
+                event.data,
+                event.resultCode
+            )
+
             HomeUIEvent.ScreenShotCaptureCancelled -> setState(state.value.copy(recording = false))
         }
     }
@@ -118,7 +124,14 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun onDirectoryDoesNotExist(images: List<Image>, recording: Boolean) {
-        setState(state.value.copy(images = images, recording = recording, parsing = false, hasEmptyMemoriesDirectory = true))
+        setState(
+            state.value.copy(
+                images = images,
+                recording = recording,
+                parsing = false,
+                hasEmptyMemoriesDirectory = true
+            )
+        )
     }
 
     private fun onImagesReceivedFromDatabase(images: List<Image>, recording: Boolean) {
