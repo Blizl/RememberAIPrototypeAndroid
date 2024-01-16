@@ -2,6 +2,7 @@ package com.reality.rememberaiprototype.home.presentation
 
 import android.annotation.SuppressLint
 import android.content.ContentResolver
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
@@ -9,6 +10,7 @@ import android.os.Build
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +24,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.LocalContentColor
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.primarySurface
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -29,6 +34,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,9 +42,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -52,10 +58,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.reality.rememberaiprototype.R
 import com.reality.rememberaiprototype.home.data.ScreenshotService
 
+
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
+fun HomeScreen(viewModel: HomeViewModel = hiltViewModel(), requestPermission: () -> Unit = {}) {
     val state by viewModel.state.collectAsState()
     val uiAction by viewModel.uiAction.collectAsState()
     val refreshing by remember { mutableStateOf(false) }
@@ -91,53 +98,34 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 fontWeight = FontWeight.Bold
             )
             if (state.showPermissionsDenied) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        stringResource(R.string.permission_needed),
-                        fontSize = 12.sp,
-                        textAlign = TextAlign.Center
-                    )
-                    Button(
-                        onClick = {}
-                    ) {
-                        Text(stringResource(R.string.add_permissions))
-                    }
-                }
+                PermissionDeniedScreen(requestPermission)
             } else if (state.parsing) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator(
-                    )
-                    Text(
-                        stringResource(R.string.currently_parsing_screenshots_from_directory_for_searching),
-                        fontSize = 12.sp,
-                    )
+                ParsingScreen()
+            } else if (state.hasEmptyMemoriesDirectory) {
+                Box {
+                    EmptyImagesScreen(state.recording) { viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick) }
+                    ParseDirectoryDialog(showParseDirectoryDialog, {
+                        viewModel.dispatchEvent(HomeUIEvent.HideParseDirectory)
+                    }, {
+                        viewModel.dispatchEvent(HomeUIEvent.ParseMemoriesFromDirectory)
+                    })
                 }
             } else {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
                 ) {
                     SearchBar(
                         query = searchQuery,
                         onQueryChange = {
                             searchQuery = it
                             viewModel.dispatchEvent(HomeUIEvent.Search(it))
-                                        },
+                        },
                         onSearch = { viewModel.dispatchEvent(HomeUIEvent.Search(it)) },
                         active = state.searching,
                         onActiveChange = {
-                            viewModel.dispatchEvent(HomeUIEvent.ToggleSearch) },
+                            viewModel.dispatchEvent(HomeUIEvent.ToggleSearch)
+                        },
                         placeholder = { Text(stringResource(R.string.search_here)) },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -160,62 +148,151 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                             )
                         }
                     }
-                }
-                Button(
-                    onClick = { viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
-                ) {
-                    if (state.recording) Text(stringResource(R.string.stop_recording)) else Text(
-                        stringResource(R.string.start_recording)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp)
+                            .align(Alignment.BottomCenter)
+                    ) {
+                        RecordingButton(recording = state.recording) {
+                            viewModel.dispatchEvent(HomeUIEvent.PrimaryButtonClick)
+                        }
+                    }
+
+                    ParseDirectoryDialog(showParseDirectoryDialog, {
+                        viewModel.dispatchEvent(HomeUIEvent.HideParseDirectory)
+                    }, {
+                        viewModel.dispatchEvent(HomeUIEvent.ParseMemoriesFromDirectory)
+                    })
                 }
             }
-        }
 
-        if (showParseDirectoryDialog) {
-            ParseDirectoryDialog({
-                viewModel.dispatchEvent(HomeUIEvent.HideParseDirectory)
-            }, {
-                viewModel.dispatchEvent(HomeUIEvent.ParseMemoriesFromDirectory)
-            })
         }
     }
 }
 
 @Composable
-fun ParseDirectoryDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = { onDismiss() },
-        title = {
-            Text(text = stringResource(R.string.no_directory_found), fontWeight = FontWeight.Bold)
-        },
-        text = {
-            Text(
-                stringResource(
-                    R.string.would_you_like_to_parse_images_from,
-                    ScreenshotService.MEMORY_DIRECTORY
-                )
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    onConfirm()
-                }) {
-                Text(stringResource(R.string.yes))
+fun PermissionDeniedScreen(requestPermission: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            stringResource(R.string.permission_needed),
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center
+        )
+        Button(
+            onClick = {
+                requestPermission()
             }
-        },
-        dismissButton = {
-            Button(
-                onClick = {
-                    onDismiss()
-                }) {
-                Text(stringResource(R.string.no))
-            }
+        ) {
+            Text(stringResource(R.string.add_permissions))
         }
-    )
+    }
+}
+
+@Composable
+fun ParsingScreen() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        CircularProgressIndicator(
+        )
+        Text(
+            stringResource(R.string.currently_parsing_screenshots_from_directory_for_searching),
+            fontSize = 12.sp,
+        )
+    }
+}
+
+@Composable
+fun EmptyImagesScreen(recording: Boolean, onRecordToggle: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                "No memories yet! Click on 'Start Recording' to remember history",
+                textAlign = TextAlign.Center,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+                .align(Alignment.BottomCenter)
+        ) {
+            RecordingButton(recording = recording, onRecordToggle = onRecordToggle)
+        }
+    }
+}
+
+@Composable
+fun RecordingButton(recording: Boolean, onRecordToggle: () -> Unit) {
+    Button(
+        onClick = { onRecordToggle() },
+        modifier = Modifier
+            .fillMaxWidth()
+    ) {
+        if (recording) Text(stringResource(R.string.stop_recording)) else Text(
+            stringResource(R.string.start_recording)
+        )
+    }
+}
+
+@Composable
+fun ParseDirectoryDialog(show: Boolean, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    if (show) {
+        AlertDialog(
+            backgroundColor = if (isSystemInDarkTheme()) Color.Black else Color.White,
+            onDismissRequest = { onDismiss() },
+            title = {
+                Text(
+                    text = stringResource(R.string.no_directory_found),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.would_you_like_to_parse_images_from,
+                        ScreenshotService.MEMORY_DIRECTORY
+                    )
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onConfirm()
+                    }) {
+                    Text(stringResource(R.string.yes))
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        onDismiss()
+                    }) {
+                    Text(stringResource(R.string.no))
+                }
+            }
+        )
+    }
 }
 
 

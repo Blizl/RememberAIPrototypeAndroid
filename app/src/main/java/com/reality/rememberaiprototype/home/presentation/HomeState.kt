@@ -9,4 +9,5 @@ data class HomeState(
     val recording: Boolean = false,
     val parsing: Boolean = false,
     val showPermissionsDenied: Boolean = false,
+    val hasEmptyMemoriesDirectory: Boolean = false
 )

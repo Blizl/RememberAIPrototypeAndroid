@@ -26,7 +26,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
 import javax.inject.Inject
-import javax.inject.Singleton
 
 @AndroidEntryPoint
 class ImageTextRecognitionService: Service(), CoroutineScope by MainScope() {

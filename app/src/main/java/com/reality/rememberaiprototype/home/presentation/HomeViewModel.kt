@@ -23,7 +23,6 @@ import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Named
-import javax.inject.Singleton
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
@@ -119,7 +118,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun onDirectoryDoesNotExist(images: List<Image>, recording: Boolean) {
-        setState(state.value.copy(images = images, recording = recording, parsing = false))
+        setState(state.value.copy(images = images, recording = recording, parsing = false, hasEmptyMemoriesDirectory = true))
     }
 
     private fun onImagesReceivedFromDatabase(images: List<Image>, recording: Boolean) {
